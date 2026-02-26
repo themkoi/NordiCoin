@@ -715,7 +715,7 @@
 	(footprint "NordiCoin:MDBT42T"
 		(layer "F.Cu")
 		(uuid "4045f63f-805a-441c-bf2b-882b18e097d5")
-		(at 129.023664 79.849264 -135)
+		(at 129.0237 79.8493 -135)
 		(property "Reference" "M1"
 			(at -0.75 -3.224995 45)
 			(layer "F.SilkS")
@@ -3087,11 +3087,11 @@
 	(footprint "NordiCoin:MDBT42TV"
 		(layer "F.Cu")
 		(uuid "cd639353-eb78-4bcd-8a46-787d90b02b08")
-		(at 129.219013 58.587096 -45)
+		(at 129.219 58.5871 -45)
 		(property "Reference" "M2"
 			(at -0.750001 -3.024995 135)
 			(layer "F.SilkS")
-			(uuid "513f8e9b-0d70-45fe-96f3-1c30150bbbb2")
+			(uuid "3e8e5835-806c-4dad-a174-3459b8049ca4")
 			(effects
 				(font
 					(size 1 1)
@@ -3102,7 +3102,7 @@
 		(property "Value" "MDBT42TV"
 			(at -0.750001 9.05001 135)
 			(layer "F.Fab")
-			(uuid "6eb2531c-c498-43ed-9ac3-68047cc71f15")
+			(uuid "7a749f53-fe3f-41e4-82bc-67828d8c282a")
 			(effects
 				(font
 					(size 1 1)
@@ -3114,7 +3114,7 @@
 			(at 0 0 135)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "d2188533-ee2a-4f24-bb77-847398a7489a")
+			(uuid "749ba2b7-f58a-4022-8cd7-9e662b59e426")
 			(effects
 				(font
 					(size 1 1)
@@ -3126,7 +3126,7 @@
 			(at 0 0 135)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "1c55119d-e15c-4ac6-941d-b078abad24eb")
+			(uuid "aaa53311-1ed3-4d25-9b90-f86c5f95b439")
 			(effects
 				(font
 					(size 1 1)
@@ -5437,6 +5437,38 @@
 	(zone
 		(net 0)
 		(net_name "")
+		(layer "F.Cu")
+		(uuid "b3f167c4-c13d-4f46-b4a0-c7a348b4e958")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(filled_areas_thickness no)
+		(keepout
+			(tracks not_allowed)
+			(vias not_allowed)
+			(pads not_allowed)
+			(copperpour allowed)
+			(footprints allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "/")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+		)
+		(polygon
+			(pts
+				(xy 125.25 78.95) (xy 122.75 76.05) (xy 125.9 73.25) (xy 128.45 75.75)
+			)
+		)
+	)
+	(zone
+		(net 0)
+		(net_name "")
 		(layers "F.Cu" "B.Cu")
 		(uuid "39062c47-62d5-4a8d-91cd-a821d7655166")
 		(hatch edge 0.5)
@@ -5484,6 +5516,38 @@
 		(polygon
 			(pts
 				(xy 112.1 55.15) (xy 132.65 55.15) (xy 132.7 86.25) (xy 112 86.1)
+			)
+		)
+	)
+	(zone
+		(net 0)
+		(net_name "")
+		(layers "F.Cu" "B.Cu")
+		(uuid "84a1f22c-d6cd-4011-99f0-643c771630f8")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(filled_areas_thickness no)
+		(keepout
+			(tracks not_allowed)
+			(vias not_allowed)
+			(pads not_allowed)
+			(copperpour allowed)
+			(footprints allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "/")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+		)
+		(polygon
+			(pts
+				(xy 124.85 60.15) (xy 123.95 61.05) (xy 126.25 63.25) (xy 127.95 61.6) (xy 125.7 59.3)
 			)
 		)
 	)
