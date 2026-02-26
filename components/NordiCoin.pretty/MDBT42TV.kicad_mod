@@ -535,4 +535,15 @@
 		(uuid "0bef075f-bbc0-42ae-9e1f-e70a27b50d27")
 	)
 	(embedded_fonts no)
+	(model "${KIPRJMOD}/components/3D/MDBT42TV_20191030.stp"
+		(offset
+			(xyz 0 -4.15 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz -90 -0 -0)
+		)
+	)
 )
