@@ -18,7 +18,10 @@ async fn blink_task(mut led: Output<'static>) -> ! {
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
-    let p = embassy_nrf::init(Default::default());
+    let mut config = embassy_nrf::config::Config::default();
+    config.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
+    config.hfclk_source = embassy_nrf::config::HfclkSource::ExternalXtal;
+    let p = embassy_nrf::init(config);
     info!("Blinky starting on nRF52805");
 
     // let led = Output::new(p.P0_17, Level::High, OutputDrive::Standard);
