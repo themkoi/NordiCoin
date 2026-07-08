@@ -1,33 +1,32 @@
-#![no_main]
 #![no_std]
+#![no_main]
 
-use embedded_hal::digital::InputPin;
-use embedded_hal::digital::OutputPin;
-use nrf52832_hal as hal;
-use nrf52832_hal::gpio::Level;
-use rtt_target::{rprintln, rtt_init_print};
+use defmt::info;
+use embassy_executor::Spawner;
+use embassy_nrf::gpio::{Level, Output, OutputDrive};
+use embassy_time::{Duration, Timer};
+use {defmt_rtt as _, panic_probe as _};
 
-#[panic_handler] // panicking behavior
-fn panic(_: &core::panic::PanicInfo) -> ! {
+#[embassy_executor::task]
+async fn blink_task(mut led: Output<'static>) -> ! {
     loop {
-        cortex_m::asm::bkpt();
+        led.toggle();
+        info!("LED toggled");
+        Timer::after(Duration::from_millis(500)).await;
     }
 }
 
-#[cortex_m_rt::entry]
-fn main() -> ! {
-    rtt_init_print!();
-    let p = hal::pac::Peripherals::take().unwrap();
-    let port0 = hal::gpio::p0::Parts::new(p.P0);
-    let mut button = port0.p0_13.into_pullup_input();
-    let mut led = port0.p0_17.into_push_pull_output(Level::Low);
+#[embassy_executor::main]
+async fn main(spawner: Spawner) {
+    let p = embassy_nrf::init(Default::default());
+    info!("Blinky starting on nRF52805");
 
-    rprintln!("Blinky button demo starting");
+    // let led = Output::new(p.P0_17, Level::High, OutputDrive::Standard);
+
+    // spawner.spawn(blink_task(led).unwrap());
+
     loop {
-        if button.is_high().unwrap() {
-            led.set_high().unwrap();
-        } else {
-            led.set_low().unwrap();
-        }
+        info!("Fucking work");
+        Timer::after(Duration::from_secs(1)).await;
     }
 }

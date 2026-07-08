@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "check",
+            "command": "clear; cargo check",
+            "type": "shell"
+        },
+        {
+            "label": "run release",
+            "command": "cargo run --release",
+            "type": "shell"
+        },
+        {
+            "label": "build release",
+            "command": "cargo build --release",
+            "type": "shell"
+        },
+        {
+            "label": "erase chip",
+            "command": "probe-rs erase --chip nRF52805_xxAA",
+            "type": "shell"
+        }
+    ]
+}
