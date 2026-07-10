@@ -12,6 +12,7 @@ use embassy_time::{Duration, Timer};
 use nrf_sdc::mpsl::MultiprotocolServiceLayer;
 use nrf_sdc::{self as sdc, mpsl};
 use static_cell::StaticCell;
+use bt_hci::param::FilterDuplicates;
 use trouble_host::prelude::*;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -47,9 +48,27 @@ fn build_sdc<'d, const N: usize>(
         .build(p, rng, mpsl, mem)
 }
 
-struct Printer {}
+/// Scan interval: how often we wake up to listen (in ms).
+/// Shorter = more power but faster discovery.
+const SCAN_INTERVAL_MS: u64 = 3000;
 
-impl EventHandler for Printer {
+/// Scan window: how long the radio is ON during each cycle (in ms).
+/// Smaller = more power efficient but may miss packets.
+const SCAN_WINDOW_MS: u64 = 40;
+
+/// Sleep duration between scan cycles (in ms).
+/// Longer sleep = more power efficient.
+const SLEEP_BETWEEN_SCANS_MS: u64 = 3000;
+
+struct SeenDevices;
+
+impl SeenDevices {
+    const fn new() -> Self {
+        Self
+    }
+}
+
+impl EventHandler for SeenDevices {
     fn on_adv_reports(&self, mut it: LeAdvReportsIter<'_>) {
         while let Some(Ok(report)) = it.next() {
             info!(
@@ -66,7 +85,7 @@ async fn main(spawner: Spawner) {
     config.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
     let p = embassy_nrf::init(config);
 
-    info!("Nordicoin Passive BLE Scanner starting!");
+    info!("Nordicoin Passive BLE Scanner starting (low-power duty-cycled)!");
 
     let mpsl_p =
         mpsl::Peripherals::new(p.RTC0, p.TIMER0, p.TEMP, p.PPI_CH19, p.PPI_CH30, p.PPI_CH31);
@@ -89,6 +108,7 @@ async fn main(spawner: Spawner) {
     );
     let mut rng = rng::Rng::new(p.RNG, Irqs);
 
+    // SDC memory: scan + central support, 1 connection slot
     let mut sdc_mem = sdc::Mem::<3224>::new();
     let sdc = unwrap!(build_sdc(sdc_p, &mut rng, mpsl, &mut sdc_mem));
 
@@ -104,25 +124,37 @@ async fn main(spawner: Spawner) {
     let central = stack.central();
     let mut runner = stack.runner();
 
-    let mut config = ScanConfig::default();
-    config.active = false;
-    config.phys = PhySet::M1;
-    config.interval = Duration::from_secs(3);
-    config.window = Duration::from_millis(75);
-    config.timeout = Duration::from_secs(0);
+    let mut scan_config = ScanConfig::default();
+    scan_config.active = false;
+    scan_config.phys = PhySet::M1;
+    scan_config.interval = Duration::from_millis(SCAN_INTERVAL_MS);
+    scan_config.window = Duration::from_millis(SCAN_WINDOW_MS);
+    scan_config.timeout = Duration::from_secs(0);
+    scan_config.filter_duplicates = FilterDuplicates::Enabled;
 
     info!(
-        "Starting passive scan (interval={}ms, window={}ms)",
-        config.interval.as_millis(),
-        config.window.as_millis()
+        "Starting low-power passive scan (interval={}ms, window={}ms, sleep={}ms)",
+        SCAN_INTERVAL_MS, SCAN_WINDOW_MS, SLEEP_BETWEEN_SCANS_MS
     );
 
-    let printer = Printer {};
+    let seen = SeenDevices::new();
     let mut scanner = Scanner::new(central);
 
     let _ = join(
-        runner.run_with_handler(&printer),
-        scanner.scan(&config),
+        runner.run_with_handler(&seen),
+        async {
+            loop {
+                match scanner.scan(&scan_config).await {
+                    Ok(_session) => {
+                        Timer::after(Duration::from_millis(SLEEP_BETWEEN_SCANS_MS)).await;
+                    }
+                    Err(e) => {
+                        defmt::error!("Scan error: {:?}", e);
+                        Timer::after(Duration::from_millis(SLEEP_BETWEEN_SCANS_MS)).await;
+                    }
+                }
+            }
+        },
     )
     .await;
 }

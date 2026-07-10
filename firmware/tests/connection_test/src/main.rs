@@ -17,21 +17,24 @@ use static_cell::StaticCell;
 use trouble_host::prelude::*;
 use {defmt_rtt as _, panic_probe as _};
 
-const TARGET_ADDRESS: [u8; 6] = [0xff, 0x8f, 0x1a, 0x05, 0xe4, 0xff];
+const TARGET_ADDRESS: [u8; 6] = [0x00, 0x93, 0x37, 0x95, 0x9b, 0xaf];
 
 const BATTERY_SERVICE_UUID: Uuid = Uuid::new_short(0x180f);
 const BATTERY_LEVEL_UUID: Uuid = Uuid::new_short(0x2a19);
 
+// BLE mandatory range for connection interval: 7.5 ms to 4.0 seconds (BLE Spec v5.4, Vol 2, Part E, §7.3.10.1)
+// Supervision timeout must be > 2 * (max_latency + 1) * max_connection_interval (BLE Spec Vol 2, Part E, §7.3.13)
+// With max_latency=0 and max_conn_interval=4s: min supervision = 8,000,001 us
 const LOW_POWER_CONN_PARAMS: RequestedConnParams = RequestedConnParams {
-    min_connection_interval: Duration::from_secs(10),
-    max_connection_interval: Duration::from_secs(10),
+    min_connection_interval: Duration::from_secs(4),
+    max_connection_interval: Duration::from_secs(4),
     max_latency: 0,
     supervision_timeout: Duration::from_secs(10),
     min_event_length: Duration::from_millis(0),
     max_event_length: Duration::from_millis(0),
 };
 
-const CYCLE_INTERVAL: Duration = Duration::from_secs(60);
+const CYCLE_INTERVAL: Duration = Duration::from_secs(5);
 
 const CONNECTIONS_MAX: usize = 1;
 const L2CAP_CHANNELS_MAX: usize = 3;
@@ -111,8 +114,9 @@ async fn main(spawner: Spawner) {
     let config = ConnectConfig {
         connect_params: LOW_POWER_CONN_PARAMS,
         scan_config: ScanConfig {
+            active: true,
             filter_accept_list: &[target],
-            phys: PhySet::M1,
+            phys: PhySet::M1M2Coded,
             ..Default::default()
         },
     };
@@ -135,6 +139,7 @@ async fn main(spawner: Spawner) {
                 }
             };
             info!("[1/4] Connected!");
+            // NOTE: Doesn't work, it first needs to scan to work tbh
 
             info!("[2/4] Setting up GATT client...");
             let client = match GattClient::<_, DefaultPacketPool, 10>::new(&stack, &conn).await {

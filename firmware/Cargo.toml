@@ -42,7 +42,7 @@ nrf-mpsl = { version = "0.3", default-features = false, features = [
     "defmt", "nrf52805",
 ] }
 bt-hci = { version = "0.9", default-features = false, features = ["defmt"] }
-trouble-host = { path = "crates/trouble/host", features = [
+trouble-host = { version = "0.7.0", features = [
     "derive", "scan", "central", "peripheral", "gatt", "defmt",
 ] }
 

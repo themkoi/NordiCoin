@@ -44,7 +44,7 @@ nrf-mpsl = { version = "0.3", default-features = false, features = [
 ] }
 bt-hci = { version = "0.9", default-features = false, features = ["defmt"] }
 trouble-host = { version = "0.7", features = [
-    "derive", "scan", "central", "peripheral", "gatt", "defmt",
+    "derive", "scan", "central", "defmt",
 ] }
 
 [profile.release]
