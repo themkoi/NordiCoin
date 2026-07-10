@@ -14,53 +14,72 @@ use embassy_time::{Duration, Timer};
 use static_cell::StaticCell;
 use {defmt_rtt as _, panic_probe as _};
 
-pub struct VddReader {
+pub struct AdcReader {
     saadc: &'static Mutex<NoopRawMutex, Saadc<'static, 1>>,
-    divider_ratio: f32,
 }
 
-impl VddReader {
-    pub fn new(
+impl AdcReader {
+    pub async fn new(
         saadc: embassy_nrf::Peri<'_, SAADC>,
         irq: impl embassy_nrf::interrupt::typelevel::Binding<
             embassy_nrf::interrupt::typelevel::SAADC,
             saadc::InterruptHandler,
         > + 'static,
-        divider_ratio: f32,
     ) -> &'static Self {
         let saadc: embassy_nrf::Peri<'static, SAADC> = unsafe {
             core::mem::transmute(saadc)
         };
 
-        let channel_config = ChannelConfig::single_ended(VddInput);
+        let mut channel_config = ChannelConfig::single_ended(VddInput);
+        channel_config.gain = saadc::Gain::Gain1_6;
 
         let mut config = SaadcConfig::default();
-        config.oversample = Oversample::Over64x;
-
-        static SAADC_MUTEX: StaticCell<Mutex<NoopRawMutex, Saadc<'static, 1>>> =
-            StaticCell::new();
-        let mutex = SAADC_MUTEX.init(Mutex::new(Saadc::new(
+        config.oversample = Oversample::Over256x;
+        config.resolution = saadc::Resolution::_14bit;
+        let saadc_real = Saadc::new(
             saadc,
             irq,
             config,
             [channel_config],
-        )));
+        );
+        saadc_real.calibrate().await;
 
-        static READER: StaticCell<VddReader> = StaticCell::new();
-        READER.init(VddReader {
+        static SAADC_MUTEX: StaticCell<Mutex<NoopRawMutex, Saadc<'static, 1>>> =
+            StaticCell::new();
+        let mutex = SAADC_MUTEX.init(Mutex::new(saadc_real));
+
+        static READER: StaticCell<AdcReader> = StaticCell::new();
+        READER.init(AdcReader {
             saadc: mutex,
-            divider_ratio,
         })
     }
 
-    pub async fn read_vdd_mv(&self) -> u16 {
-        let sample1 = self.sample_once().await;
-        let sample2 = self.sample_once().await;
-        let avg = (sample1 + sample2) / 2;
+    /// Convert raw SAADC sample to voltage in millivolts.
+    ///
+    /// SAADC formula: result = V_in * GAIN / REFERENCE * 2^RESOLUTION
+    ///
+    /// With: Gain = 1/6, Reference = 0.6V (internal), Resolution = 14-bit (2^14 = 16384)
+    ///
+    /// V_in = result * REFERENCE / (GAIN * 2^RESOLUTION)
+    ///      = result * 0.6 / (1/6 * 16384)
+    ///      = result * 3.6 / 16384
+    ///
+    /// In millivolts: V_mV = result * 3600 / 16384 = result * 225 / 1024
+    ///
+    /// Using integer arithmetic: (result * 225) >> 10
+    ///
+    /// For VDD measurement: result is always >= 0.
+    pub fn raw_to_mv(raw: i16) -> i32 {
+        (raw as i32 * 225) >> 10
+    }
 
-        let vdd_mv = (avg as u32 * 600 * self.divider_ratio as u32) / 65536;
+    pub async fn read_raw(&self) -> i16 {
+        self.sample_once().await
+    }
 
-        vdd_mv as u16
+    pub async fn read_mv(&self) -> i32 {
+        let raw = self.sample_once().await;
+        Self::raw_to_mv(raw)
     }
 
     async fn sample_once(&self) -> i16 {
@@ -81,11 +100,11 @@ async fn main(_spawner: Spawner) {
     config.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
     let p = embassy_nrf::init(config);
 
-    let vdd_reader = VddReader::new(p.SAADC, Irqs, 2.0);
+    let adc_reader = AdcReader::new(p.SAADC, Irqs).await;
 
     loop {
-        let vdd_mv = vdd_reader.read_vdd_mv().await;
-        info!("VDD = {} mV", vdd_mv);
+        let mv = adc_reader.read_mv().await;
+        info!("ADC VDD = {} mV", mv);
         Timer::after(Duration::from_secs(1)).await;
     }
 }
