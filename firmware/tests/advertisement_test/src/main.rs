@@ -16,12 +16,8 @@ use static_cell::StaticCell;
 use trouble_host::prelude::*;
 use {defmt_rtt as _, panic_probe as _};
 
-const CONNECTIONS_MAX: usize = 1;
-const L2CAP_CHANNELS_MAX: usize = 1;
-
 bind_interrupts!(struct Irqs {
     RNG => rng::InterruptHandler<RNG>;
-    SAADC => embassy_nrf::saadc::InterruptHandler;
     EGU0_SWI0 => nrf_sdc::mpsl::LowPrioInterruptHandler;
     CLOCK_POWER => nrf_sdc::mpsl::ClockInterruptHandler;
     RADIO => nrf_sdc::mpsl::HighPrioInterruptHandler;
@@ -40,28 +36,7 @@ fn build_sdc<'d, const N: usize>(
     mpsl: &'d MultiprotocolServiceLayer,
     mem: &'d mut sdc::Mem<N>,
 ) -> Result<nrf_sdc::SoftdeviceController<'d>, nrf_sdc::Error> {
-    sdc::Builder::new()?
-        .support_scan()
-        .support_ext_scan()
-        .support_central()
-        .support_ext_central()
-        .support_peripheral()
-        .central_count(1)?
-        .peripheral_count(1)?
-        .build(p, rng, mpsl, mem)
-}
-
-struct Printer {}
-
-impl EventHandler for Printer {
-    fn on_adv_reports(&self, mut it: LeAdvReportsIter<'_>) {
-        while let Some(Ok(report)) = it.next() {
-            info!(
-                "PASSIVE SCAN: discovered {:?} ({:?})",
-                report.addr, report.data
-            );
-        }
-    }
+    sdc::Builder::new()?.support_adv().build(p, rng, mpsl, mem)
 }
 
 fn encode_adv_data<'a>(dest: &'a mut [u8]) -> &'a [u8] {
@@ -107,13 +82,12 @@ async fn main(spawner: Spawner) {
     );
     let mut rng = rng::Rng::new(p.RNG, Irqs);
 
-    let mut sdc_mem = sdc::Mem::<3224>::new();
+    let mut sdc_mem = sdc::Mem::<1152>::new();
     let sdc = unwrap!(build_sdc(sdc_p, &mut rng, mpsl, &mut sdc_mem));
 
     let address: Address = Address::random([0xff, 0x8f, 0x1b, 0x05, 0xe4, 0xff]);
 
-    let mut resources: HostResources<_, DefaultPacketPool, CONNECTIONS_MAX, L2CAP_CHANNELS_MAX> =
-        HostResources::new();
+    let mut resources: HostResources<_, DefaultPacketPool, 0, 0> = HostResources::new();
     let stack = trouble_host::new(sdc, &mut resources)
         .set_random_address(address)
         .build();
@@ -124,48 +98,41 @@ async fn main(spawner: Spawner) {
     let mut adv_buf = [0u8; 31];
     let adv_data = encode_adv_data(&mut adv_buf);
 
+    const INTERVAL: u64 = 3000;
     let adv_params = AdvertisementParameters {
-        primary_phy: PhyKind::Le1M,
-        secondary_phy: PhyKind::Le1M,
-        tx_power: TxPower::Minus20dBm,
+        primary_phy: Default::default(),
+        secondary_phy: Default::default(),
+        tx_power: TxPower::Minus40dBm,
         timeout: None,
         max_events: None,
-        interval_min: Duration::from_secs(5),
-        interval_max: Duration::from_secs(5),
-        channel_map: None,
+        interval_min: Duration::from_millis(INTERVAL),
+        interval_max: Duration::from_millis(INTERVAL),
         filter_policy: AdvFilterPolicy::default(),
+        channel_map: None,
         fragment: false,
         own_addr_kind: None,
     };
 
-    let adv = Advertisement::NonconnectableNonscannableUndirected {
-        adv_data: adv_data,
-    };
+    let adv = Advertisement::NonconnectableNonscannableUndirected { adv_data: adv_data };
 
     info!(
-        "Starting low-power beacon advertisement (interval={}ms, tx_power={}dBm)",
-        adv_params.interval_min.as_millis(),
-        adv_params.tx_power as i8,
+        "Starting beacon advertisement (interval={}ms)",
+        adv_params.interval_min.as_millis()
     );
 
-    let printer = Printer {};
-
-    let _ = join(
-        runner.run_with_handler(&printer),
-        async {
-            loop {
-                match peripheral.advertise(&adv_params, adv).await {
-                    Ok(_advertiser) => {
-                        info!("Advertisement cycle complete");
-                        Timer::after(Duration::from_secs(6)).await;
-                    }
-                    Err(e) => {
-                        defmt::error!("Advertisement error: {:?}", e);
-                        Timer::after(Duration::from_secs(1)).await;
-                    }
+    let _ = join(runner.run(), async {
+        loop {
+            match peripheral.advertise(&adv_params, adv).await {
+                Ok(_advertiser) => {
+                    info!("Advertisement cycle complete");
+                    Timer::after(Duration::from_secs(6)).await;
+                }
+                Err(e) => {
+                    defmt::error!("Advertisement error: {:?}", e);
+                    Timer::after(Duration::from_secs(1)).await;
                 }
             }
-        },
-    )
+        }
+    })
     .await;
 }
