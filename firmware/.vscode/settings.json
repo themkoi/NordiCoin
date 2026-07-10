@@ -1,6 +1,13 @@
 {
     "rust-analyzer.cargo.allTargets": false,
     "rust-analyzer.cargo.target": "thumbv7em-none-eabihf",
+    "rust-analyzer.linkedProjects": [
+        "Cargo.toml",
+        "tests/adc/Cargo.toml",
+        "tests/advertisement_test/Cargo.toml",
+        "tests/connection_test/Cargo.toml",
+        "tests/passive_scan_test/Cargo.toml"
+    ],
     "cSpell.words": [
         "nrf",
         "embassy"

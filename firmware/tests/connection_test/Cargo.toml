@@ -1,10 +1,11 @@
+[workspace]
 [package]
-name = "nordicoin"
+name = "nordicoin-connection-test"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-embassy-nrf = { version = "0.11", default-features = false, features = [
+embassy-nrf = { version = "0.11.0", default-features = false, features = [
     "defmt",
     "time-driver-rtc1",
     "gpiote",
@@ -42,7 +43,7 @@ nrf-mpsl = { version = "0.3", default-features = false, features = [
     "defmt", "nrf52805",
 ] }
 bt-hci = { version = "0.9", default-features = false, features = ["defmt"] }
-trouble-host = { path = "crates/trouble/host", features = [
+trouble-host = { version = "0.7", features = [
     "derive", "scan", "central", "peripheral", "gatt", "defmt",
 ] }
 
