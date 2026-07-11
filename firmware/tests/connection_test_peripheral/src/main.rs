@@ -198,7 +198,7 @@ where
         interval_min: Duration::from_millis(INTERVAL_MIN_MS),
         interval_max: Duration::from_millis(INTERVAL_MAX_MS),
         filter_policy: AdvFilterPolicy::default(),
-        channel_map: None,
+        channel_map: None, // Can't be changed
         fragment: false,
         own_addr_kind: None,
     };
