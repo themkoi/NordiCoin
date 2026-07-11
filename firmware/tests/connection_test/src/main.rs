@@ -1,23 +1,26 @@
 #![no_std]
 #![no_main]
 
+use core::cell::RefCell;
+
+use bt_hci::param::{AddrKind, BdAddr, FilterDuplicates, LeAdvReportsIter};
 use defmt::info;
-use defmt::warn;
 use defmt::unwrap;
 use embassy_executor::Spawner;
 use embassy_futures::join::join;
+use embassy_futures::select::select;
 use embassy_nrf::mode::Async;
 use embassy_nrf::peripherals::RNG;
 use embassy_nrf::{bind_interrupts, rng};
 use embassy_time::{Duration, Timer};
-
+use heapless::Deque;
 use nrf_sdc::mpsl::MultiprotocolServiceLayer;
 use nrf_sdc::{self as sdc, mpsl};
 use static_cell::StaticCell;
 use trouble_host::prelude::*;
 use {defmt_rtt as _, panic_probe as _};
 
-const TARGET_ADDRESS: [u8; 6] = [0x00, 0x93, 0x37, 0x95, 0x9b, 0xaf];
+const TARGET_ADDRESS: [u8; 6] = [206, 23, 126, 69, 54, 87];
 
 const BATTERY_SERVICE_UUID: Uuid = Uuid::new_short(0x180f);
 const BATTERY_LEVEL_UUID: Uuid = Uuid::new_short(0x2a19);
@@ -34,7 +37,11 @@ const LOW_POWER_CONN_PARAMS: RequestedConnParams = RequestedConnParams {
     max_event_length: Duration::from_millis(0),
 };
 
-const CYCLE_INTERVAL: Duration = Duration::from_secs(5);
+const SCAN_INTERVAL_MS: u64 = 3000;
+const SCAN_WINDOW_MS: u64 = 300;
+const SLEEP_BETWEEN_SCANS_MS: u64 = 1000;
+const CYCLE_INTERVAL: Duration = Duration::from_secs(2);
+const MAX_DEVICES: usize = 16;
 
 const CONNECTIONS_MAX: usize = 1;
 const L2CAP_CHANNELS_MAX: usize = 3;
@@ -61,10 +68,74 @@ fn build_sdc<'d, const N: usize>(
 ) -> Result<nrf_sdc::SoftdeviceController<'d>, nrf_sdc::Error> {
     sdc::Builder::new()?
         .support_scan()
+        .support_ext_scan()
         .support_central()
+        .support_ext_central()
         .central_count(1)?
-        .buffer_cfg(251, 251, 3, 3)?
         .build(p, rng, mpsl, mem)
+}
+
+/// A discovered device entry: (address kind, bd_addr, rssi)
+#[derive(Debug, Copy, Clone)]
+struct DiscoveredDevice {
+    kind: AddrKind,
+    addr: BdAddr,
+    rssi: i8,
+}
+
+/// Collects discovered devices from advertising reports
+struct DeviceList {
+    devices: RefCell<Deque<DiscoveredDevice, MAX_DEVICES>>,
+}
+
+impl DeviceList {
+    fn new() -> Self {
+        Self {
+            devices: RefCell::new(Deque::new()),
+        }
+    }
+
+    fn add(&self, kind: AddrKind, addr: BdAddr, rssi: i8) {
+        let mut devices = self.devices.borrow_mut();
+        // Update existing entry or add new one
+        let mut found = false;
+        let mut i = 0;
+        while i < devices.len() {
+            let dev = devices.get(i).unwrap();
+            if dev.addr.raw() == addr.raw() {
+                // Update existing entry
+                devices.get_mut(i).unwrap().rssi = rssi;
+                found = true;
+                break;
+            }
+            i += 1;
+        }
+        if !found {
+            if devices.is_full() {
+                devices.pop_front();
+            }
+            devices
+                .push_back(DiscoveredDevice { kind, addr, rssi })
+                .unwrap();
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.devices.borrow().len()
+    }
+
+    fn get(&self, index: usize) -> Option<DiscoveredDevice> {
+        self.devices.borrow().get(index).copied()
+    }
+}
+
+impl EventHandler for DeviceList {
+    fn on_adv_reports(&self, mut it: LeAdvReportsIter<'_>) {
+        while let Some(Ok(report)) = it.next() {
+            info!("Adding device {:?}", report.addr);
+            self.add(report.addr_kind, report.addr, report.rssi);
+        }
+    }
 }
 
 #[embassy_executor::main]
@@ -73,8 +144,9 @@ async fn main(spawner: Spawner) {
     config.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
     let p = embassy_nrf::init(config);
 
-    info!("=== Nordicoin Low-Power BLE Central ===");
+    info!("=== Nordicoin BLE Central - Scan & Connect ===");
 
+    // Setup MPSL (Multiprotocol Service Layer)
     let mpsl_p =
         mpsl::Peripherals::new(p.RTC0, p.TIMER0, p.TEMP, p.PPI_CH19, p.PPI_CH30, p.PPI_CH31);
     let lfclk_cfg = mpsl::raw::mpsl_clock_lfclk_cfg_t {
@@ -90,86 +162,171 @@ async fn main(spawner: Spawner) {
     )));
     spawner.spawn(unwrap!(mpsl_task(&*mpsl)));
 
+    // Setup SDC (Softdevice Controller)
     let sdc_p = sdc::Peripherals::new(
         p.PPI_CH17, p.PPI_CH18, p.PPI_CH20, p.PPI_CH21, p.PPI_CH22, p.PPI_CH23, p.PPI_CH24,
         p.PPI_CH25, p.PPI_CH26, p.PPI_CH27, p.PPI_CH28, p.PPI_CH29,
     );
     let mut rng = rng::Rng::new(p.RNG, Irqs);
-    let mut sdc_mem = sdc::Mem::<5376>::new();
+    let mut sdc_mem = sdc::Mem::<3224>::new();
     let sdc = unwrap!(build_sdc(sdc_p, &mut rng, mpsl, &mut sdc_mem));
 
     Timer::after(Duration::from_millis(200)).await;
 
+    // Build BLE stack
     let address: Address = Address::random([0xff, 0x8f, 0x1b, 0x05, 0xe4, 0xff]);
     let mut resources: HostResources<_, DefaultPacketPool, CONNECTIONS_MAX, L2CAP_CHANNELS_MAX> =
         HostResources::new();
     let stack = trouble_host::new(sdc, &mut resources)
         .set_random_address(address)
         .build();
-    let mut runner = stack.runner();
-    let mut central = stack.central();
 
+    // Build the target address from the constant
     let target: Address = Address::random(TARGET_ADDRESS);
+    info!("Target address: {:?}", target);
 
-    let config = ConnectConfig {
-        connect_params: LOW_POWER_CONN_PARAMS,
-        scan_config: ScanConfig {
-            active: true,
-            filter_accept_list: &[target],
-            phys: PhySet::M1M2Coded,
-            ..Default::default()
-        },
-    };
+    let central = stack.central();
+    let mut scanner = Scanner::new(central);
+    let mut runner = stack.runner();
+
+    let mut scan_config = ScanConfig::default();
+    scan_config.active = false;
+    scan_config.phys = PhySet::M1;
+    scan_config.interval = Duration::from_millis(SCAN_INTERVAL_MS);
+    scan_config.window = Duration::from_millis(SCAN_WINDOW_MS);
+
+    scan_config.filter_duplicates = FilterDuplicates::Enabled;
 
     info!(
-        "Target: {:?}, Connection interval: {}ms",
-        target,
-        LOW_POWER_CONN_PARAMS.min_connection_interval.as_millis()
+        "Starting low-power passive scan (interval={}ms, window={}ms, sleep={}ms)",
+        SCAN_INTERVAL_MS, SCAN_WINDOW_MS, SLEEP_BETWEEN_SCANS_MS
     );
 
-    let _ = join(runner.run(), async {
-        loop {
-            info!("[1/4] Connecting...");
-            let conn = match central.connect(&config).await {
-                Ok(c) => c,
-                Err(e) => {
-                    warn!("[1/4] Connect failed: {:?}", e);
-                    Timer::after(CYCLE_INTERVAL).await;
-                    continue;
-                }
-            };
-            info!("[1/4] Connected!");
-            // NOTE: Doesn't work, it first needs to scan to work tbh
+    loop {
+        // ============================================================
+        // PHASE 1: SCAN for devices - same pattern as passive_scan_test
+        // ============================================================
+        info!(">>> Scanning for BLE devices (duty-cycled passive scan)...");
+        let device_list = DeviceList::new();
 
-            info!("[2/4] Setting up GATT client...");
-            let client = match GattClient::<_, DefaultPacketPool, 10>::new(&stack, &conn).await {
-                Ok(c) => c,
-                Err(e) => {
-                    warn!("[2/4] GATT client failed: {:?}", e);
-                    conn.disconnect();
-                    Timer::after(CYCLE_INTERVAL).await;
-                    continue;
+        let _ = select(
+            join(runner.run_with_handler(&device_list), async {
+                loop {
+                    match scanner.scan(&scan_config).await {
+                        Ok(_session) => {
+                            Timer::after(Duration::from_millis(SLEEP_BETWEEN_SCANS_MS)).await;
+                        }
+                        Err(e) => {
+                            defmt::error!("Scan error: {:?}", e);
+                            Timer::after(Duration::from_millis(SLEEP_BETWEEN_SCANS_MS)).await;
+                        }
+                    }
                 }
-            };
+            }),
+            async {
+                Timer::after(Duration::from_secs(10)).await;
+            },
+        )
+        .await;
 
-            info!("[3/4] Reading battery level...");
-            match read_battery_level(&client).await {
-                Ok(level) => {
-                    info!("[3/4] Battery level: {}%", level);
-                }
-                Err(e) => {
-                    warn!("[3/4] Read failed: {:?}", e);
+        // ============================================================
+        // PHASE 2: LIST & MATCH discovered devices
+        // ============================================================
+        let count = device_list.len();
+        info!(
+            ">>> Scan complete. Found {} device(s), looking for target {:?}",
+            count, target
+        );
+
+        if count == 0 {
+            info!("No devices found. Retrying in {:?}...", CYCLE_INTERVAL);
+            Timer::after(CYCLE_INTERVAL).await;
+            continue;
+        }
+
+        for i in 0..count {
+            if let Some(dev) = device_list.get(i) {
+                info!("Device: {:?}", defmt::Debug2Format(&dev));
+            }
+        }
+
+        // Match against target address
+        let mut matched: Option<(DiscoveredDevice, Address)> = None;
+        for i in 0..count {
+            if let Some(dev) = device_list.get(i) {
+                let dev_addr = Address::new(dev.kind, dev.addr);
+                if dev_addr == target {
+                    info!("*** Target address matched! RSSI: {} dBm ***", dev.rssi);
+                    matched = Some((dev, dev_addr));
+                    break;
                 }
             }
-
-            info!("[4/4] Disconnecting...");
-            conn.disconnect();
-
-            info!("Sleeping {}s until next cycle...", CYCLE_INTERVAL.as_secs());
-            Timer::after(CYCLE_INTERVAL).await;
         }
-    })
-    .await;
+
+        let Some((chosen, chosen_addr)) = matched else {
+            info!(
+                "Target {:?} not found in scan results. Retrying in {:?}...",
+                target, CYCLE_INTERVAL
+            );
+            Timer::after(CYCLE_INTERVAL).await;
+            continue;
+        };
+        info!(
+            ">>> Connecting to target: {:?} (RSSI: {} dBm)",
+            chosen_addr, chosen.rssi
+        );
+
+        let config = ConnectConfig {
+            connect_params: LOW_POWER_CONN_PARAMS,
+            scan_config: ScanConfig {
+                active: true,
+                filter_accept_list: &[chosen_addr],
+                phys: PhySet::M1M2Coded,
+                ..Default::default()
+            },
+        };
+
+        info!("[1/4] Connecting...");
+        let conn = match stack.central().connect(&config).await {
+            Ok(c) => c,
+            Err(e) => {
+                info!("[1/4] Connect failed: {:?}", e);
+                Timer::after(CYCLE_INTERVAL).await;
+                continue;
+            }
+        };
+        info!("[1/4] Connected!");
+
+        // ============================================================
+        // PHASE 4: GATT operations - read battery level
+        // ============================================================
+        info!("[2/4] Setting up GATT client...");
+        let client = match GattClient::<_, DefaultPacketPool, 10>::new(&stack, &conn).await {
+            Ok(c) => c,
+            Err(e) => {
+                info!("[2/4] GATT client failed: {:?}", e);
+                conn.disconnect();
+                Timer::after(CYCLE_INTERVAL).await;
+                continue;
+            }
+        };
+
+        info!("[3/4] Reading battery level...");
+        match read_battery_level(&client).await {
+            Ok(level) => {
+                info!("[3/4] Battery level: {}%", level);
+            }
+            Err(e) => {
+                info!("[3/4] Read failed: {:?}", e);
+            }
+        }
+
+        info!("[4/4] Disconnecting...");
+        conn.disconnect();
+
+        info!("Cycle complete. Sleeping {}s...", CYCLE_INTERVAL.as_secs());
+        Timer::after(CYCLE_INTERVAL).await;
+    }
 }
 
 async fn read_battery_level<'a, C: Controller, P: PacketPool, const N: usize>(
@@ -178,8 +335,9 @@ async fn read_battery_level<'a, C: Controller, P: PacketPool, const N: usize>(
     let services = client.services_by_uuid(&BATTERY_SERVICE_UUID).await?;
     let service = services.first().ok_or(Error::NotFound)?;
 
-    let char: Characteristic<u8> =
-        client.characteristic_by_uuid(&service, &BATTERY_LEVEL_UUID).await?;
+    let char: Characteristic<u8> = client
+        .characteristic_by_uuid(&service, &BATTERY_LEVEL_UUID)
+        .await?;
 
     let mut data = [0u8; 1];
     client.read_characteristic(&char, &mut data).await?;
