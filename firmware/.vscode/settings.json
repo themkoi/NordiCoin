@@ -6,6 +6,7 @@
         "tests/adc/Cargo.toml",
         "tests/advertisement_test/Cargo.toml",
         "tests/connection_test_central/Cargo.toml",
+        "tests/connection_test_peripheral/Cargo.toml",
         "tests/passive_scan_test/Cargo.toml"
     ],
     "cSpell.words": [
