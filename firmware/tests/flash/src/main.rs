@@ -8,6 +8,7 @@ use embassy_nrf::nvmc::Nvmc;
 use embedded_storage::nor_flash::{NorFlash, ReadNorFlash};
 use {defmt_rtt as _, panic_probe as _};
 
+#[allow(dead_code)]
 extern "C" {
     static storage_start: u8;
     static storage_end: u8;

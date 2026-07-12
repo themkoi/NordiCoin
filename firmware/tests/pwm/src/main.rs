@@ -12,7 +12,7 @@ use {defmt_rtt as _, panic_probe as _};
 
 pub struct PwmController {
     timer: Timer<'static>,
-    gpiote: OutputChannel<'static>,
+    _gpiote: OutputChannel<'static>,
     ppi_set: Ppi<'static, PPI_CH0, 1, 1>,
     ppi_clr: Ppi<'static, PPI_CH1, 1, 1>,
 }
@@ -54,14 +54,14 @@ impl PwmController {
 
         PwmController {
             timer,
-            gpiote,
+            _gpiote: gpiote,
             ppi_set,
             ppi_clr,
         }
     }
 
-    /// Set PWM frequency in Hz.
-    /// Note: resets CC[1] (duty) to 0. Call `set_duty_percent()` again after.
+    // Set PWM frequency in Hz.
+    // Call `set_duty_percent()` again after.
     pub fn set_frequency(&mut self, hz: u32) {
         let period = 16_000_000 / hz;
         self.timer.stop();
@@ -70,14 +70,13 @@ impl PwmController {
         self.timer.start();
     }
 
-    /// Turn off PWM output to save power.
+    // Turn off PWM output to save power.
     pub fn turn_off(&mut self) {
         self.timer.stop();
         self.ppi_set.disable();
         self.ppi_clr.disable();
     }
 
-    /// Turn on PWM output.
     pub fn turn_on(&mut self) {
         self.timer.clear();
         self.ppi_set.enable();

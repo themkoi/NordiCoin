@@ -25,9 +25,6 @@ const TARGET_ADDRESS: [u8; 6] = [206, 23, 126, 69, 54, 87];
 const BATTERY_SERVICE_UUID: Uuid = Uuid::new_short(0x180f);
 const BATTERY_LEVEL_UUID: Uuid = Uuid::new_short(0x2a19);
 
-// BLE mandatory range for connection interval: 7.5 ms to 4.0 seconds (BLE Spec v5.4, Vol 2, Part E, §7.3.10.1)
-// Supervision timeout must be > 2 * (max_latency + 1) * max_connection_interval (BLE Spec Vol 2, Part E, §7.3.13)
-// With max_latency=0 and max_conn_interval=4s: min supervision = 8,000,001 us
 const LOW_POWER_CONN_PARAMS: RequestedConnParams = RequestedConnParams {
     min_connection_interval: Duration::from_secs(4),
     max_connection_interval: Duration::from_secs(4),
@@ -75,7 +72,6 @@ fn build_sdc<'d, const N: usize>(
         .build(p, rng, mpsl, mem)
 }
 
-/// A discovered device entry: (address kind, bd_addr, rssi)
 #[derive(Debug, Copy, Clone)]
 struct DiscoveredDevice {
     kind: AddrKind,
@@ -83,7 +79,6 @@ struct DiscoveredDevice {
     rssi: i8,
 }
 
-/// Collects discovered devices from advertising reports
 struct DeviceList {
     devices: RefCell<Deque<DiscoveredDevice, MAX_DEVICES>>,
 }
@@ -97,13 +92,11 @@ impl DeviceList {
 
     fn add(&self, kind: AddrKind, addr: BdAddr, rssi: i8) {
         let mut devices = self.devices.borrow_mut();
-        // Update existing entry or add new one
         let mut found = false;
         let mut i = 0;
         while i < devices.len() {
             let dev = devices.get(i).unwrap();
             if dev.addr.raw() == addr.raw() {
-                // Update existing entry
                 devices.get_mut(i).unwrap().rssi = rssi;
                 found = true;
                 break;
@@ -147,7 +140,6 @@ async fn main(spawner: Spawner) {
     info!("Nordicoin BLE Central test");
     info!("It does not work!");
 
-    // Setup MPSL (Multiprotocol Service Layer)
     let mpsl_p =
         mpsl::Peripherals::new(p.RTC0, p.TIMER0, p.TEMP, p.PPI_CH19, p.PPI_CH30, p.PPI_CH31);
     let lfclk_cfg = mpsl::raw::mpsl_clock_lfclk_cfg_t {
@@ -163,7 +155,6 @@ async fn main(spawner: Spawner) {
     )));
     spawner.spawn(unwrap!(mpsl_task(&*mpsl)));
 
-    // Setup SDC (Softdevice Controller)
     let sdc_p = sdc::Peripherals::new(
         p.PPI_CH17, p.PPI_CH18, p.PPI_CH20, p.PPI_CH21, p.PPI_CH22, p.PPI_CH23, p.PPI_CH24,
         p.PPI_CH25, p.PPI_CH26, p.PPI_CH27, p.PPI_CH28, p.PPI_CH29,
@@ -174,7 +165,6 @@ async fn main(spawner: Spawner) {
 
     Timer::after(Duration::from_millis(200)).await;
 
-    // Build BLE stack
     let address: Address = Address::random([0xff, 0x8f, 0x1b, 0x05, 0xe4, 0xff]);
     let mut resources: HostResources<_, DefaultPacketPool, CONNECTIONS_MAX, L2CAP_CHANNELS_MAX> =
         HostResources::new();
@@ -182,7 +172,6 @@ async fn main(spawner: Spawner) {
         .set_random_address(address)
         .build();
 
-    // Build the target address from the constant
     let target: Address = Address::random(TARGET_ADDRESS);
     info!("Target address: {:?}", target);
 
@@ -204,9 +193,6 @@ async fn main(spawner: Spawner) {
     );
 
     loop {
-        // ============================================================
-        // PHASE 1: SCAN for devices - same pattern as passive_scan_test
-        // ============================================================
         info!(">>> Scanning for BLE devices (duty-cycled passive scan)...");
         let device_list = DeviceList::new();
 
@@ -230,9 +216,6 @@ async fn main(spawner: Spawner) {
         )
         .await;
 
-        // ============================================================
-        // PHASE 2: LIST & MATCH discovered devices
-        // ============================================================
         let count = device_list.len();
         info!(
             ">>> Scan complete. Found {} device(s), looking for target {:?}",
@@ -251,7 +234,6 @@ async fn main(spawner: Spawner) {
             }
         }
 
-        // Match against target address
         let mut matched: Option<(DiscoveredDevice, Address)> = None;
         for i in 0..count {
             if let Some(dev) = device_list.get(i) {
@@ -298,9 +280,6 @@ async fn main(spawner: Spawner) {
         };
         info!("[1/4] Connected!");
 
-        // ============================================================
-        // PHASE 4: GATT operations - read battery level
-        // ============================================================
         info!("[2/4] Setting up GATT client...");
         let client = match GattClient::<_, DefaultPacketPool, 10>::new(&stack, &conn).await {
             Ok(c) => c,
