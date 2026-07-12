@@ -48,16 +48,10 @@ fn build_sdc<'d, const N: usize>(
         .build(p, rng, mpsl, mem)
 }
 
-/// Scan interval: how often we wake up to listen (in ms).
-/// Shorter = more power but faster discovery.
 const SCAN_INTERVAL_MS: u64 = 3000;
 
-/// Scan window: how long the radio is ON during each cycle (in ms).
-/// Smaller = more power efficient but may miss packets.
 const SCAN_WINDOW_MS: u64 = 40;
 
-/// Sleep duration between scan cycles (in ms).
-/// Longer sleep = more power efficient.
 const SLEEP_BETWEEN_SCANS_MS: u64 = 3000;
 
 struct SeenDevices;
@@ -85,7 +79,7 @@ async fn main(spawner: Spawner) {
     config.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
     let p = embassy_nrf::init(config);
 
-    info!("Nordicoin Passive BLE Scanner starting (low-power duty-cycled)!");
+    info!("Passive BLE Scanner test");
 
     let mpsl_p =
         mpsl::Peripherals::new(p.RTC0, p.TIMER0, p.TEMP, p.PPI_CH19, p.PPI_CH30, p.PPI_CH31);
@@ -108,7 +102,6 @@ async fn main(spawner: Spawner) {
     );
     let mut rng = rng::Rng::new(p.RNG, Irqs);
 
-    // SDC memory: scan + central support, 1 connection slot
     let mut sdc_mem = sdc::Mem::<3224>::new();
     let sdc = unwrap!(build_sdc(sdc_p, &mut rng, mpsl, &mut sdc_mem));
 

@@ -9,15 +9,15 @@ use embassy_nrf::pac::P0;
 use embassy_time::{Duration, Timer};
 use {defmt_rtt as _, panic_probe as _};
 
-const LED_PIN: usize = 20;
-
 pub struct LedController {
+    pin_nr: u8,
     pin: Flex<'static>,
 }
 
 impl LedController {
-    pub fn new(pin: embassy_nrf::Peri<'static, embassy_nrf::peripherals::P0_20>) -> Self {
+    pub fn new(pin_nr: u8, pin: embassy_nrf::Peri<'static, embassy_nrf::peripherals::P0_20>) -> Self {
         Self {
+            pin_nr,
             pin: Flex::new(pin),
         }
     }
@@ -28,7 +28,7 @@ impl LedController {
     }
 
     pub fn turn_off(&mut self) {
-        P0.pin_cnf(LED_PIN).write(|w| {
+        P0.pin_cnf(self.pin_nr as usize).write(|w| {
             w.set_dir(Dir::Input);
             w.set_input(Input::Disconnect);
             w.set_pull(Pull::Disabled);
@@ -44,7 +44,7 @@ async fn main(_spawner: Spawner) {
     config.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
     let p = embassy_nrf::init(config);
 
-    let mut led = LedController::new(p.P0_20);
+    let mut led = LedController::new(20, p.P0_20);
 
     info!("LED test on P0.20");
 

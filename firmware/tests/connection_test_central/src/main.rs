@@ -144,7 +144,8 @@ async fn main(spawner: Spawner) {
     config.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
     let p = embassy_nrf::init(config);
 
-    info!("=== Nordicoin BLE Central - Scan & Connect ===");
+    info!("Nordicoin BLE Central test");
+    info!("It does not work!");
 
     // Setup MPSL (Multiprotocol Service Layer)
     let mpsl_p =
