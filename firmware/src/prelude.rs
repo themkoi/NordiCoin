@@ -2,7 +2,7 @@
 pub use defmt::{info, warn, error};
 
 #[cfg(not(feature = "debug"))]
-pub use crate::no_debug::*;
+pub use crate::{info, warn, error};
 
 pub use nrf_sdc::{self as sdc, mpsl};
 pub use nrf_sdc::SoftdeviceController;

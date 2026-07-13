@@ -25,6 +25,15 @@
             "label": "run release no debug",
             "command": "cargo run --release --no-default-features",
             "type": "shell"
+        },
+        {
+            "label": "binary info",
+            "command": "./scripts/binary-info.sh",
+            "type": "shell",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
         }
     ]
 }

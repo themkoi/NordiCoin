@@ -53,7 +53,11 @@ struct NordCoinService {
 }
 
 #[embassy_executor::task]
-pub async fn ble_task(sdc: SoftdeviceController<'static>, mut adc: AdcReader) -> ! {
+pub async fn ble_task(
+    sdc: SoftdeviceController<'static>,
+    mut adc: AdcReader,
+    flash: &'static crate::peripherals::flash::FlashStorage,
+) -> ! {
     let addr = read_device_address();
     info!(
         "MAC: {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",

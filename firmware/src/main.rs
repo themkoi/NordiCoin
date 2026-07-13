@@ -2,20 +2,19 @@
 #![no_main]
 
 mod ble;
+mod config;
 #[cfg(not(feature = "debug"))]
 mod no_debug;
-mod prelude;
-mod config;
 mod peripherals;
+mod prelude;
 
 use embassy_executor::Spawner;
 use embassy_nrf::{bind_interrupts, config::LfclkSource, rng};
 use embassy_time::Timer;
-use static_cell::StaticCell;
 use nrf_mpsl::MultiprotocolServiceLayer;
+use static_cell::StaticCell;
 
 use prelude::*;
-
 
 #[cfg(feature = "debug")]
 use defmt_rtt as _;
@@ -39,8 +38,13 @@ async fn main(spawner: Spawner) {
 
     info!("Nordicoin start");
 
+    // Flash
+    static FLASH: StaticCell<peripherals::flash::FlashStorage> = StaticCell::new();
+    let flash: &'static mut peripherals::flash::FlashStorage =
+        FLASH.init(peripherals::flash::FlashStorage::new(p.NVMC).await);
+
     // ADC
-    let mut adc_reader = AdcReader::new(p.SAADC, Irqs).await;
+    let adc_reader = AdcReader::new(p.SAADC, Irqs).await;
 
     // BLE
     let mpsl_p: nrf_mpsl::Peripherals<'_> =
@@ -53,8 +57,9 @@ async fn main(spawner: Spawner) {
         skip_wait_lfclk_started: mpsl::raw::MPSL_DEFAULT_SKIP_WAIT_LFCLK_STARTED != 0,
     };
     static MPSL: StaticCell<MultiprotocolServiceLayer> = StaticCell::new();
-    let mpsl: &mut MultiprotocolServiceLayer<'static> = MPSL.init(mpsl::MultiprotocolServiceLayer::new(mpsl_p, Irqs, lfclk_cfg).unwrap());
-    spawner.spawn(mpsl_task(&*mpsl).unwrap());
+    let mpsl: &mut MultiprotocolServiceLayer<'static> =
+        MPSL.init(mpsl::MultiprotocolServiceLayer::new(mpsl_p, Irqs, lfclk_cfg).unwrap());
+    spawner.spawn(mpsl_task(mpsl).unwrap());
 
     let sdc_p = sdc::Peripherals::new(
         p.PPI_CH17, p.PPI_CH18, p.PPI_CH20, p.PPI_CH21, p.PPI_CH22, p.PPI_CH23, p.PPI_CH24,
@@ -66,7 +71,7 @@ async fn main(spawner: Spawner) {
     static SDC_MEM: StaticCell<sdc::Mem<SDC_MEM_SIZE>> = StaticCell::new();
     let sdc_mem: &mut sdc::Mem<SDC_MEM_SIZE> = SDC_MEM.init(sdc::Mem::new());
     let sdc: SoftdeviceController<'static> = build_sdc(sdc_p, rng, mpsl, sdc_mem).unwrap();
-    spawner.spawn(ble_task(sdc, adc_reader).unwrap());
+    spawner.spawn(ble_task(sdc, adc_reader, flash).unwrap());
 
     loop {
         warn!("We should not reach here");
