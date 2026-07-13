@@ -17,19 +17,35 @@
             "type": "shell"
         },
         {
+            "label": "build release no-debug",
+            "command": "cargo build --profile release_no_debug --no-default-features",
+            "type": "shell"
+        },
+        {
             "label": "erase chip",
             "command": "probe-rs erase --chip nRF52805_xxAA",
             "type": "shell"
         },
         {
             "label": "run release no debug",
-            "command": "cargo run --release --no-default-features",
+            "command": "cargo run --profile release_no_debug --no-default-features",
             "type": "shell"
         },
         {
             "label": "binary info",
-            "command": "./scripts/binary-info.sh",
+            "command": "./scripts/binary_info.sh release",
             "type": "shell",
+            "dependsOn": "build release",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "binary info no-debug",
+            "command": "./scripts/binary_info.sh release_no_debug",
+            "type": "shell",
+            "dependsOn": "build release no-debug",
             "group": {
                 "kind": "build",
                 "isDefault": false

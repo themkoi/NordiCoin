@@ -4,16 +4,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-BINARY=""
-for triple in thumbv7em-none-eabi thumbv6m-none-eabi thumbv7m-none-eabi; do
-    if [[ -f "$PROJECT_DIR/target/$triple/release/nordicoin" ]]; then
-        BINARY="$PROJECT_DIR/target/$triple/release/nordicoin"
-        break
-    fi
-done
+PROFILE="${1:-release}"
+BINARY="$PROJECT_DIR/target/thumbv7em-none-eabi/$PROFILE/nordicoin"
 
-if [[ -z "$BINARY" ]]; then
-    echo "No binary found. Build first with: cargo build --release"
+if [[ ! -f "$BINARY" ]]; then
+    echo "Binary not found at $BINARY"
     exit 1
 fi
 

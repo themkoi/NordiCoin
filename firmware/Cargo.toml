@@ -61,6 +61,16 @@ debug = [
     "trouble-host/defmt",
 ]
 
+[profile.release_no_debug]
+inherits = "release"
+opt-level = "z"
+debug = 0
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+rpath = false
+
 [profile.release]
 opt-level = "z"
 debug = 2
@@ -68,10 +78,7 @@ lto = true
 codegen-units = 1 
 
 [profile.dev]
-opt-level = "z"
 debug = 2
-lto = true
-codegen-units = 1
 
 [patch.crates-io]
 nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
