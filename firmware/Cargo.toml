@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# MCU specific
 embassy-nrf = { version = "0.11", default-features = false, features = [
-    "defmt",
     "time-driver-rtc1",
     "gpiote",
     "unstable-pac",
@@ -15,36 +15,50 @@ embassy-nrf = { version = "0.11", default-features = false, features = [
 embassy-executor = { version = "0.10", default-features = false, features = [
     "platform-cortex-m",
     "executor-thread",
-    "defmt",
     "executor-interrupt",
 ] }
-embassy-time = { version = "0.5", default-features = false, features = [
-    "defmt",
-    "defmt-timestamp-uptime",
-] }
+embassy-time = { version = "0.5", default-features = false }
 embassy-futures = "0.1"
-embassy-sync = { version = "0.8", features = ["defmt"] }
+embassy-sync = { version = "0.8" }
 
-defmt = "1.0"
-defmt-rtt = "1.0"
-panic-probe = { version = "1.0", features = ["print-defmt"] }
+# Debug (optional)
+defmt = { version = "1.0", optional = true }
+defmt-rtt = { version = "1.0", optional = true }
+panic-probe = { version = "1.0" }
 
 cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.0"
 static_cell = "2"
 heapless = "0.9"
 
-# BLE stack (nrf-sdc + nrf-mpsl + trouble-host)
+# BLE
 nrf-sdc = { version = "0.4", default-features = false, features = [
-    "defmt", "peripheral", "central", "nrf52805",
+    "peripheral", "central", "nrf52805",
 ] }
 nrf-mpsl = { version = "0.3", default-features = false, features = [
-    "defmt", "nrf52805",
+    "nrf52805",
 ] }
-bt-hci = { version = "0.9", default-features = false, features = ["defmt"] }
+bt-hci = { version = "0.9", default-features = false }
 trouble-host = { version = "0.7.0", features = [
-    "derive", "scan", "central", "peripheral", "gatt", "defmt",
+    "derive", "scan", "central", "peripheral", "gatt",
 ] }
+
+[features]
+default = ["debug"]
+debug = [
+    "dep:defmt",
+    "dep:defmt-rtt",
+    "panic-probe/print-defmt",
+    "embassy-nrf/defmt",
+    "embassy-executor/defmt",
+    "embassy-time/defmt",
+    "embassy-time/defmt-timestamp-uptime",
+    "embassy-sync/defmt",
+    "nrf-sdc/defmt",
+    "nrf-mpsl/defmt",
+    "bt-hci/defmt",
+    "trouble-host/defmt",
+]
 
 [profile.release]
 opt-level = "z"

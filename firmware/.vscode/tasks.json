@@ -20,6 +20,11 @@
             "label": "erase chip",
             "command": "probe-rs erase --chip nRF52805_xxAA",
             "type": "shell"
+        },
+        {
+            "label": "run release no debug",
+            "command": "cargo run --release --no-default-features",
+            "type": "shell"
         }
     ]
 }
