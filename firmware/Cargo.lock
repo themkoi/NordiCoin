@@ -873,7 +873,6 @@ dependencies = [
  "embassy-sync",
  "embassy-time",
  "embedded-storage",
- "heapless",
  "nrf-mpsl",
  "nrf-sdc",
  "panic-probe",

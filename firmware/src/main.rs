@@ -73,8 +73,5 @@ async fn main(spawner: Spawner) {
     let sdc: SoftdeviceController<'static> = build_sdc(sdc_p, rng, mpsl, sdc_mem).unwrap();
     spawner.spawn(ble_task(sdc, adc_reader, flash).unwrap());
 
-    loop {
-        warn!("We should not reach here");
-        Timer::after_secs(1).await;
-    }
+    // Can I just end here?
 }

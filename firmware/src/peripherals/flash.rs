@@ -7,12 +7,10 @@ use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::mutex::Mutex;
 use embedded_storage::nor_flash::{NorFlash, ReadNorFlash};
 
-use crate::config::BLE_NAME_LENGTH_MAX;
-
 #[derive(Debug)]
 #[repr(C)]
 pub struct FlashData {
-    pub name: [u8; BLE_NAME_LENGTH_MAX],
+    pub bonded: bool, // Bonded doesn't mean ble moded, it means someone connected and said bonded, which means the app did it
 }
 
 extern "C" {

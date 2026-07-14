@@ -14,6 +14,6 @@ pub use trouble_host::prelude::*;
 pub use embassy_futures::join::join;
 pub use crate::peripherals::adc::*;
 pub use embassy_time::Duration;
-pub use heapless::{String as HeaplessString, Vec as HeaplessVec};
 pub use embassy_time::Timer;
 pub use embassy_futures::select::select;
+pub use defmt::Debug2Format;

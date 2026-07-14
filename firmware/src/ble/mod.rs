@@ -1,4 +1,4 @@
-use crate::ble::advertise::{advertise, get_ble_name};
+use crate::ble::advertise::{advertise};
 pub use crate::prelude::*;
 use bt_hci::uuid::{appearance, BluetoothUuid16};
 use embassy_nrf::{mode::Async, rng};
@@ -74,11 +74,10 @@ pub async fn ble_task(
     let mut runner = stack.runner();
     let mut peripheral = stack.peripheral();
 
-    let mut name = get_ble_name().await;
-
+    let flash_data = flash.read().await.unwrap();
     loop {
         let server = Server::new_with_config(GapConfig::Peripheral(PeripheralConfig {
-            name: &name,
+            name: "",
             appearance: &appearance::UNKNOWN,
         }))
         .unwrap();
@@ -86,7 +85,7 @@ pub async fn ble_task(
         #[allow(unused_must_use)] // Rust analyzer is screaming
         let res = select(runner.run(), async {
             loop {
-                match advertise(&name, address, &mut adc, &mut peripheral, &server).await {
+                match advertise(flash_data.bonded, address, &mut adc, &mut peripheral, &server).await {
                     Ok(conn) => {
                         // gatt_events_task(&server, &conn, &stack).await.ok();
                     }

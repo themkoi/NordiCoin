@@ -166,14 +166,14 @@ where
         + for<'t> ControllerCmdSync<LeSetExtAdvEnable<'t>>
         + for<'t> ControllerCmdSync<LeSetExtScanResponseData<'t>>,
 {
-    let mut advertiser_data = [0u8; 31];
+    let mut advertiser_data = [0u8; 3];
     let len = AdStructure::encode_slice(
         &[
             AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
-            AdStructure::CompleteLocalName(name.as_bytes()),
         ],
         &mut advertiser_data[..],
     )?;
+    let _ = name;
 
     const INTERVAL_MIN_MS: u64 = 5000;
     const INTERVAL_MAX_MS: u64 = 5100;
