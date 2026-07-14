@@ -72,5 +72,8 @@ async fn main(spawner: Spawner) {
     let sdc: SoftdeviceController<'static> = build_sdc(sdc_p, rng, mpsl, sdc_mem).unwrap();
     spawner.spawn(ble_task(sdc, adc_reader, flash).unwrap());
 
+    // LED
+    spawner.spawn(led_task(peripherals::led::LedController::new(20, p.P0_20)).unwrap());
+
     // Can I just end here?
 }
