@@ -21,14 +21,9 @@ fn read_device_address_type() -> u8 {
     pac::FICR.deviceaddrtype().read().deviceaddrtype() as u8
 }
 
-pub const DEVICE_ID_LENGTH: usize = 4;
-pub fn read_device_id() -> u32 {
+pub const DEVICE_ID_LENGTH: usize = 2;
+pub fn read_device_id() -> u16 {
     let id_0 = pac::FICR.deviceid(0).read();
     let id_1 = pac::FICR.deviceid(1).read();
-
-    let first_two = (id_0 >> 16) as u16;
-
-    let last_two = id_1 as u16;
-
-    ((first_two as u32) << 16) | (last_two as u32)
+    (((id_0 >> 16) as u8) as u16) << 8 | (id_1 as u8) as u16
 }

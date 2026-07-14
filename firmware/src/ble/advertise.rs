@@ -43,7 +43,8 @@ where
         .unwrap(),
         false => {
             let device_id = read_device_id();
-            let mut buf = [0u8; BLE_NAME_NOT_BONDED.len() + DEVICE_ID_LENGTH];
+            // DEVICE_ID_LENGTH * 2 because each byte of the device ID is encoded as 2 hex characters
+            let mut buf = [0u8; BLE_NAME_NOT_BONDED.len() + DEVICE_ID_LENGTH * 2];
             buf[..BLE_NAME_NOT_BONDED.len()].copy_from_slice(BLE_NAME_NOT_BONDED.as_bytes());
             let hex = &mut buf[BLE_NAME_NOT_BONDED.len()..];
             let mut i = 0;
@@ -52,6 +53,7 @@ where
                 hex[i + 1] = nibble_to_hex(byte & 0x0F);
                 i += 2;
             }
+            let hex_len = DEVICE_ID_LENGTH * 2;
             info!(
                 "Final not bonded device ID is: {:?}",
                 Debug2Format(&str::from_utf8(&buf))
@@ -61,7 +63,7 @@ where
                 &[
                     AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
                     AdStructure::CompleteLocalName(
-                        &buf[..BLE_NAME_NOT_BONDED.len() + DEVICE_ID_LENGTH],
+                        &buf[..BLE_NAME_NOT_BONDED.len() + hex_len],
                     ),
                 ],
                 &mut adv_data[..],

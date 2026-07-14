@@ -74,7 +74,7 @@ pub async fn ble_task(
     let mut runner = stack.runner();
     let mut peripheral = stack.peripheral();
 
-    let flash_data = flash.read().await.unwrap();
+    let flash_data = flash.read().await;
     loop {
         let server = Server::new_with_config(GapConfig::Peripheral(PeripheralConfig {
             name: "",
