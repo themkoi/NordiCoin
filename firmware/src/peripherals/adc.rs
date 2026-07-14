@@ -1,4 +1,5 @@
 use embassy_nrf::{peripherals::SAADC, saadc::{self, ChannelConfig, Oversample, Saadc, VddInput, Config as SaadcConfig}};
+use crate::prelude::*;
 
 pub struct AdcReader {
     saadc: Saadc<'static, 1>,
@@ -27,5 +28,19 @@ impl AdcReader {
         let mut buf = [0i16; 1];
         self.saadc.sample(&mut buf).await;
         (buf[0] as i32 * 225) >> 10
+    }
+
+    pub async fn get_bat_byte(&mut self) -> u8 {
+        let mv = self.get_mv().await;
+        info!("Battery mv is: {:?}", mv);
+        let bat = if mv < 1800 {
+            0
+        } else if mv >= 3300 {
+            255
+        } else {
+            ((mv - 1800) * 255 / 1500) as u8
+        };
+        info!("Battery byte is: {}", bat);
+        bat
     }
 }

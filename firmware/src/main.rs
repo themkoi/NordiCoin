@@ -10,7 +10,6 @@ mod prelude;
 
 use embassy_executor::Spawner;
 use embassy_nrf::{bind_interrupts, config::LfclkSource, rng};
-use embassy_time::Timer;
 use nrf_mpsl::MultiprotocolServiceLayer;
 use static_cell::StaticCell;
 

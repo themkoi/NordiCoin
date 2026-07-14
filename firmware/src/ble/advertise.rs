@@ -32,15 +32,31 @@ where
         + for<'t> ControllerCmdSync<LeSetExtScanResponseData<'t>>,
 {
     let mut adv_data = [0u8; 31];
+    let bat_byte = adc.get_bat_byte().await;
+
     info!("Bonded status: {}", bonded);
     let len = match bonded {
-        true => AdStructure::encode_slice(
-            &[AdStructure::Flags(
-                LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED,
-            )],
-            &mut adv_data[..],
-        )
-        .unwrap(),
+        true => {
+            let len = AdStructure::encode_slice(
+                &[
+                    AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
+                    // Otherwise it doesn't work, because we don't follow ble spec
+                    AdStructure::Unknown {
+                        ty: 0x21,
+                        data: &[bat_byte],
+                    },
+                ],
+                &mut adv_data[..],
+            )
+            .unwrap();
+            /*
+             info!("Adv data before bat byte: {:?}", adv_data[..len]);
+             adv_data[len] = bat_byte;
+             len += 1;
+             info!("Adv data after bat byte: {:?}", adv_data[..len]);
+            */
+            len
+        }
         false => {
             let device_id = read_device_id();
             // DEVICE_ID_LENGTH * 2 because each byte of the device ID is encoded as 2 hex characters
@@ -62,9 +78,7 @@ where
             AdStructure::encode_slice(
                 &[
                     AdStructure::Flags(LE_GENERAL_DISCOVERABLE | BR_EDR_NOT_SUPPORTED),
-                    AdStructure::CompleteLocalName(
-                        &buf[..BLE_NAME_NOT_BONDED.len() + hex_len],
-                    ),
+                    AdStructure::CompleteLocalName(&buf[..BLE_NAME_NOT_BONDED.len() + hex_len]),
                 ],
                 &mut adv_data[..],
             )
