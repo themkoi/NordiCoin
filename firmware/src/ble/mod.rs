@@ -2,6 +2,7 @@ use crate::ble::{advertise::advertise, gatt::gatt_manager};
 pub use crate::prelude::*;
 use bt_hci::uuid::{appearance, BluetoothUuid16};
 use embassy_nrf::{mode::Async, rng};
+use embassy_time::Instant;
 use nrf_mpsl::MultiprotocolServiceLayer;
 
 mod advertise;
@@ -87,7 +88,7 @@ pub async fn ble_task(
     let mut runner = stack.runner();
     let mut peripheral = stack.peripheral();
 
-    let flash_data = flash.read().await;
+    let mut flash_data = flash.read().await;
     loop {
         let server = Server::new_with_config(GapConfig::Peripheral(PeripheralConfig {
             name: "",
@@ -100,8 +101,36 @@ pub async fn ble_task(
             loop {
                 match advertise(&flash_data, address, &mut adc, &mut peripheral, &server).await {
                     Ok(conn) => {
-                        gatt_manager(&server, &conn, &stack).await;
-                        info!("Ending connection");
+                        let timeout = match flash_data.bonded {
+                            true => BLE_CONN_TIMEOUT_BONDED,
+                            false => BLE_CONN_TIMEOUT_NOT_BONDED,
+                        };
+
+                        // Set the uptime value
+                        server
+                            .set(
+                                &server.service.uptime,
+                                &((Instant::now().as_secs() / 60) as u32),
+                            )
+                            .log();
+
+                        if BLINK_ON_CONNECTION {
+                            LED_CHANNEL.send(LedCommand::TurnOnFor(timeout.as_secs() as u8)).await;
+                        }
+
+                        match select(
+                            Timer::after(timeout),
+                            gatt_manager(&mut flash_data, flash, &server, &conn, &stack),
+                        )
+                        .await
+                        {
+                            embassy_futures::select::Either::First(_) => {
+                                warn!("Connection was too long!")
+                            }
+                            embassy_futures::select::Either::Second(_) => {
+                                info!("Ending connection")
+                            }
+                        }
                     }
                     Err(e) => {
                         error!("Advertising error: {:?}", e);

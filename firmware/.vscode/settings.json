@@ -11,6 +11,7 @@
         "tests/pwm/Cargo.toml",
         "tests/led/Cargo.toml",
         "tests/temp/Cargo.toml",
+        "tests/button/Cargo.toml",
     ],
     "cSpell.words": [
         "nrf",

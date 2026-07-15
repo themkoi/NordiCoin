@@ -2,6 +2,8 @@ use crate::{ble::Server, prelude::*};
 use trouble_host::types::gatt_traits::FromGatt;
 
 pub async fn gatt_manager<C: Controller, P: PacketPool>(
+    flash_data: &mut FlashData,
+    flash: &'static crate::peripherals::flash::FlashStorage,
     server: &Server<'_>,
     conn: &GattConnection<'_, '_, P>,
     stack: &Stack<'_, C, P>,
@@ -60,11 +62,11 @@ pub async fn gatt_manager<C: Controller, P: PacketPool>(
                 let reply = match event {
                     GattEvent::Read(event) => event.accept(),
                     GattEvent::Write(event) => {
+                        let handle = event.handle();
                         let result: Result<(), AttErrorCode> = event.with_data(|offset, data| {
                             if offset != 0 {
                                 return Err(AttErrorCode::INVALID_OFFSET);
                             }
-                            let handle = event.handle();
                             if handle == find_me_loud_char.handle {
                                 let value = u8::from_gatt(data)
                                     .map_err(|_| AttErrorCode::INVALID_ATTRIBUTE_VALUE_LENGTH)?;
@@ -76,16 +78,26 @@ pub async fn gatt_manager<C: Controller, P: PacketPool>(
                                 info!("GATT Write: find_me_quiet = {}", value);
                                 LED_CHANNEL.try_send(LedCommand::TurnOnFor(value)).log();
                             } else if handle == tx_power_char.handle {
-                                let value = u8::from_gatt(data)
+                                let value = i8::from_gatt(data)
                                     .map_err(|_| AttErrorCode::INVALID_ATTRIBUTE_VALUE_LENGTH)?;
                                 info!("GATT Write: tx_power = {}", value);
+                                flash_data.tx_power = value;
                             } else if handle == bonded_char.handle {
                                 let value = bool::from_gatt(data)
                                     .map_err(|_| AttErrorCode::INVALID_ATTRIBUTE_VALUE_LENGTH)?;
                                 info!("GATT Write: bonded = {}", value);
+                                flash_data.bonded = value;
                             }
                             Ok(())
                         });
+
+                        // Because we need async
+                        if (handle == tx_power_char.handle || handle == bonded_char.handle)
+                            && result.is_ok()
+                        {
+                            info!("Saving to flash because of gatt update");
+                            flash.save(&flash_data).await;
+                        }
 
                         match result {
                             Ok(()) => event.accept(),

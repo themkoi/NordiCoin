@@ -9,7 +9,6 @@ use crate::prelude::*;
 #[derive(Clone)]
 #[cfg_attr(feature = "debug", derive(Format))]
 pub enum LedCommand {
-    TurnOff,
     Blink,
     TurnOnFor(u8), // seconds
 }
@@ -60,9 +59,6 @@ pub async fn led_task(controller: LedController) {
     controller.turn_off().await;
     loop {
         match LED_CHANNEL.receive().await {
-            LedCommand::TurnOff => {
-                controller.turn_off().await;
-            }
             LedCommand::Blink => {
                 controller.blink().await;
             }

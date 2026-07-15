@@ -102,7 +102,6 @@ impl PwmController {
         let start = PWM_BASE_FREQ.wrapping_sub(PWM_FREQ_TOLERANCE as u32);
         let end = PWM_BASE_FREQ.wrapping_add(PWM_FREQ_TOLERANCE as u32);
 
-        // Sweep up
         let mut freq = start;
         while freq <= end {
             self.set_frequency(freq);
@@ -112,17 +111,6 @@ impl PwmController {
             self.set_duty_percent(0);
             EmbassyTimer::after(PWM_BASE_DELAY_MS).await;
             freq = freq.wrapping_add(PWM_FREQ_STEP as u32);
-        }
-        // Sweep down
-        freq = end;
-        while freq >= start {
-            self.set_frequency(freq);
-            self.set_duty_percent(PWM_BASE_DUTY);
-            info!("PWM: freq={} Hz  duty={} %", freq, PWM_BASE_DUTY);
-            EmbassyTimer::after(PWM_BASE_DELAY_MS).await;
-            self.set_duty_percent(0);
-            EmbassyTimer::after(PWM_BASE_DELAY_MS).await;
-            freq = freq.wrapping_sub(PWM_FREQ_STEP as u32);
         }
     }
 }

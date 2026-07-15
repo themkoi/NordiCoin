@@ -42,3 +42,4 @@ pub use embassy_futures::select::select;
 pub use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 pub use embassy_sync::channel::Channel;
 pub use crate::other::*;
+pub use crate::peripherals::flash::*;

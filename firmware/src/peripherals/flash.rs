@@ -60,6 +60,7 @@ const FLASH_BUF_SIZE: usize = FlashData::POSTCARD_MAX_SIZE;
 
 extern "C" {
     static storage_start: u8;
+    static storage_end: u8;
 }
 
 static FLASH_STORAGE: Mutex<CriticalSectionRawMutex, RefCell<Option<Nvmc<'static>>>> =
@@ -83,7 +84,8 @@ impl FlashStorage {
         let nvmc = nvmc_ref.as_mut().unwrap();
         let off = core::ptr::addr_of!(storage_start) as u32;
 
-        nvmc.erase(off, off + FLASH_BUF_SIZE as u32)
+        let page_end = off + (core::ptr::addr_of!(storage_end) as u32 - off);
+        nvmc.erase(off, page_end)
             .map_err(|_| "Flash erase failed")
             .unwrap();
 
