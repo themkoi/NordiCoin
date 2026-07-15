@@ -7,6 +7,7 @@ use embassy_sync::mutex::Mutex;
 use crate::prelude::*;
 
 #[derive(Clone)]
+#[cfg_attr(feature = "debug", derive(Format))]
 pub enum LedCommand {
     TurnOff,
     Blink,

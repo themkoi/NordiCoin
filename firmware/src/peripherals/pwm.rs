@@ -7,7 +7,7 @@ use embassy_time::Timer as EmbassyTimer;
 use crate::config::*;
 use crate::prelude::*;
 
-#[derive(PartialEq)]
+#[cfg_attr(feature = "debug", derive(Format))]
 pub enum PwmCommand {
     TurnOff,
     TurnOnFor(u8), // s
@@ -147,6 +147,7 @@ pub async fn pwm_task(mut controller: PwmController) {
                                 PWM_CHANNEL.ready_to_receive().await;
                             },
                             async {
+                                controller.turn_on();
                                 loop {
                                     controller.sweep().await;
                                 }

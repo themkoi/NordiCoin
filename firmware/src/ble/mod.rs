@@ -1,10 +1,11 @@
-use crate::ble::advertise::{advertise};
+use crate::ble::{advertise::advertise, gatt::gatt_manager};
 pub use crate::prelude::*;
 use bt_hci::uuid::{appearance, BluetoothUuid16};
 use embassy_nrf::{mode::Async, rng};
 use nrf_mpsl::MultiprotocolServiceLayer;
 
 mod advertise;
+mod gatt;
 
 #[embassy_executor::task]
 pub async fn mpsl_task(mpsl: &'static MultiprotocolServiceLayer<'static>) -> ! {
@@ -39,7 +40,11 @@ pub fn build_sdc<'d, const N: usize>(
 }
 
 const NORDCOIN_SERVICE_UUID: BluetoothUuid16 = BluetoothUuid16::new(0x0001);
-const FIND_ME_LOUD_CHAR: BluetoothUuid16 = BluetoothUuid16::new(0x0002);
+const FIND_ME_LOUD_CHAR: BluetoothUuid16 = BluetoothUuid16::new(0x0002); // in seconds
+const FIND_ME_QUIET_CHAR: BluetoothUuid16 = BluetoothUuid16::new(0x0003); // in seconds
+const UPTIME_CHAR: BluetoothUuid16 = BluetoothUuid16::new(0x0004); // in minutes
+const TX_POWER_CHAR: BluetoothUuid16 = BluetoothUuid16::new(0x0005);
+const BONDED_CHAR: BluetoothUuid16 = BluetoothUuid16::new(0x0006);
 
 #[gatt_server]
 struct Server {
@@ -48,8 +53,16 @@ struct Server {
 
 #[gatt_service(uuid = NORDCOIN_SERVICE_UUID)]
 struct NordCoinService {
-    #[characteristic(uuid = FIND_ME_LOUD_CHAR, write, value = 0)]
-    status: u8,
+    #[characteristic(uuid = FIND_ME_LOUD_CHAR, write)]
+    find_me_loud: u8,
+    #[characteristic(uuid = FIND_ME_QUIET_CHAR, write)]
+    find_me_quiet: u8,
+    #[characteristic(uuid = UPTIME_CHAR, read)]
+    uptime: u32,
+    #[characteristic(uuid = TX_POWER_CHAR, write)]
+    tx_power: i8, // type is trouble_host::advertise::TxPower
+    #[characteristic(uuid = BONDED_CHAR, write)]
+    bonded: bool,
 }
 
 #[embassy_executor::task]
@@ -85,9 +98,10 @@ pub async fn ble_task(
         #[allow(unused_must_use)] // Rust analyzer is screaming
         let res = select(runner.run(), async {
             loop {
-                match advertise(flash_data.bonded, address, &mut adc, &mut peripheral, &server).await {
+                match advertise(&flash_data, address, &mut adc, &mut peripheral, &server).await {
                     Ok(conn) => {
-                        // gatt_events_task(&server, &conn, &stack).await.ok();
+                        gatt_manager(&server, &conn, &stack).await;
+                        info!("Ending connection");
                     }
                     Err(e) => {
                         error!("Advertising error: {:?}", e);

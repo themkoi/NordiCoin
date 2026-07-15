@@ -1,3 +1,5 @@
+use crate::config::BLE_DEFAULT_TX_POWER;
+
 use core::cell::RefCell;
 
 use crc::{Crc, CRC_32_ISCSI};
@@ -14,11 +16,43 @@ use serde::{Deserialize, Serialize};
 #[repr(C)]
 pub struct FlashData {
     pub bonded: bool,
+    pub tx_power: i8,
+}
+
+/// Convert an i8 tx_power value to a trouble_host TxPower enum.
+/// Returns the default (ZerodBm) if the value doesn't match any valid level.
+pub fn tx_power_from_i8(value: i8) -> trouble_host::advertise::TxPower {
+    match value {
+        -40 => trouble_host::advertise::TxPower::Minus40dBm,
+        -20 => trouble_host::advertise::TxPower::Minus20dBm,
+        -16 => trouble_host::advertise::TxPower::Minus16dBm,
+        -12 => trouble_host::advertise::TxPower::Minus12dBm,
+        -8 => trouble_host::advertise::TxPower::Minus8dBm,
+        -4 => trouble_host::advertise::TxPower::Minus4dBm,
+        0 => trouble_host::advertise::TxPower::ZerodBm,
+        2 => trouble_host::advertise::TxPower::Plus2dBm,
+        3 => trouble_host::advertise::TxPower::Plus3dBm,
+        4 => trouble_host::advertise::TxPower::Plus4dBm,
+        5 => trouble_host::advertise::TxPower::Plus5dBm,
+        6 => trouble_host::advertise::TxPower::Plus6dBm,
+        7 => trouble_host::advertise::TxPower::Plus7dBm,
+        8 => trouble_host::advertise::TxPower::Plus8dBm,
+        10 => trouble_host::advertise::TxPower::Plus10dBm,
+        12 => trouble_host::advertise::TxPower::Plus12dBm,
+        14 => trouble_host::advertise::TxPower::Plus14dBm,
+        16 => trouble_host::advertise::TxPower::Plus16dBm,
+        18 => trouble_host::advertise::TxPower::Plus18dBm,
+        20 => trouble_host::advertise::TxPower::Plus20dBm,
+        _ => trouble_host::advertise::TxPower::ZerodBm,
+    }
 }
 
 impl Default for FlashData {
     fn default() -> Self {
-        Self { bonded: false }
+        Self {
+            bonded: false,
+            tx_power: BLE_DEFAULT_TX_POWER,
+        }
     }
 }
 
@@ -50,13 +84,17 @@ impl FlashStorage {
         let off = core::ptr::addr_of!(storage_start) as u32;
 
         nvmc.erase(off, off + FLASH_BUF_SIZE as u32)
-            .map_err(|_| "Flash erase failed").unwrap();
+            .map_err(|_| "Flash erase failed")
+            .unwrap();
 
         let mut buf = [0u8; FLASH_BUF_SIZE];
         let crc = Crc::<u32>::new(&CRC_32_ISCSI);
         let used = postcard::to_slice_crc32(&data, &mut buf, crc.digest())
-            .map_err(|_| "Serialization failed").unwrap();
-        nvmc.write(off, used).map_err(|_| "Flash write failed").unwrap();
+            .map_err(|_| "Serialization failed")
+            .unwrap();
+        nvmc.write(off, used)
+            .map_err(|_| "Flash write failed")
+            .unwrap();
     }
 
     pub async fn read(&self) -> FlashData {

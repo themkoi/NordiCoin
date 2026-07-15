@@ -5,7 +5,7 @@ fn nibble_to_hex(n: u8) -> u8 {
     }
 }
 
-use crate::ble::Server;
+use crate::{ble::Server, peripherals::flash::{tx_power_from_i8, FlashData}};
 pub use crate::prelude::*;
 use bt_hci::{
     cmd::le::{
@@ -14,9 +14,8 @@ use bt_hci::{
     },
     controller::ControllerCmdSync,
 };
-
 pub async fn advertise<'values, 'server, C: Controller>(
-    bonded: bool,
+    flash_data: &FlashData,
     address: Address,
     adc: &mut AdcReader,
     peripheral: &mut Peripheral<'values, C, DefaultPacketPool>,
@@ -34,8 +33,8 @@ where
     let mut adv_data = [0u8; 31];
     let bat_byte = adc.get_bat_byte().await;
 
-    info!("Bonded status: {}", bonded);
-    let len = match bonded {
+    info!("Bonded status: {}", flash_data.bonded);
+    let len = match flash_data.bonded {
         true => {
             let len = AdStructure::encode_slice(
                 &[
@@ -71,7 +70,7 @@ where
             }
             let hex_len = DEVICE_ID_LENGTH * 2;
             info!(
-                "Final not bonded device ID is: {:?}",
+                "Final not bonded device name is: {:?}",
                 Debug2Format(&str::from_utf8(&buf))
             );
 
@@ -92,7 +91,7 @@ where
     let adv_params = AdvertisementParameters {
         primary_phy: Default::default(),
         secondary_phy: Default::default(),
-        tx_power: TxPower::Minus40dBm,
+        tx_power: tx_power_from_i8(flash_data.tx_power),
         timeout: None,
         max_events: None,
         interval_min: Duration::from_millis(INTERVAL_MIN_MS),
