@@ -75,5 +75,14 @@ async fn main(spawner: Spawner) {
     // LED
     spawner.spawn(led_task(peripherals::led::LedController::new(20, p.P0_20)).unwrap());
 
+    // PWM
+    spawner.spawn(pwm_task(peripherals::pwm::PwmController::new(
+        p.TIMER1,
+        p.PPI_CH0,
+        p.PPI_CH1,
+        p.GPIOTE_CH0,
+        p.P0_18.into(),
+    )).unwrap());
+
     // Can I just end here?
 }
