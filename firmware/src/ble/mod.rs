@@ -94,7 +94,7 @@ pub async fn ble_task(
             name: "",
             appearance: &appearance::UNKNOWN,
         }))
-        .nrcrap().await;
+        .unwrap();
 
         #[allow(unused_must_use)] // Rust analyzer is screaming
         let res = select(runner.run(), async {

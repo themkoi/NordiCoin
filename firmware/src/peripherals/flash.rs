@@ -82,28 +82,28 @@ impl FlashStorage {
     pub async fn save(&self, data: &FlashData) {
         let guard = FLASH_STORAGE.lock().await;
         let mut nvmc_ref = guard.borrow_mut();
-        let nvmc = nvmc_ref.as_mut().nrcrap().await;
+        let nvmc = nvmc_ref.as_mut().unwrap();
         let off = core::ptr::addr_of!(storage_start) as u32;
 
         let page_end = off + (core::ptr::addr_of!(storage_end) as u32 - off);
         nvmc.erase(off, page_end)
             .map_err(|_| "Flash erase failed")
-            .nrcrap().await;
+            .unwrap();
 
         let mut buf = [0u8; FLASH_BUF_SIZE];
         let crc = Crc::<u32>::new(&CRC_32_ISCSI);
         let used = postcard::to_slice_crc32(&data, &mut buf, crc.digest())
             .map_err(|_| "Serialization failed")
-            .nrcrap().await;
+            .unwrap();
         nvmc.write(off, used)
             .map_err(|_| "Flash write failed")
-            .nrcrap().await;
+            .unwrap();
     }
 
     pub async fn read(&self) -> FlashData {
         let guard = FLASH_STORAGE.lock().await;
         let mut nvmc_ref = guard.borrow_mut();
-        let nvmc = nvmc_ref.as_mut().nrcrap().await;
+        let nvmc = nvmc_ref.as_mut().unwrap();
         let off = core::ptr::addr_of!(storage_start) as u32;
 
         let mut buf = [0u8; FLASH_BUF_SIZE];
