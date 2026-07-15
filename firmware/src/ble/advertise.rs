@@ -53,7 +53,7 @@ where
                             ],
                             &mut adv_data[..],
                         )
-                        .unwrap();
+                        .nrcrap().await;
                         /*
                          info!("Adv data before bat byte: {:?}", adv_data[..len]);
                          adv_data[len] = bat_byte;
@@ -90,7 +90,7 @@ where
                             ],
                             &mut adv_data[..],
                         )
-                        .unwrap()
+                        .nrcrap().await
                     }
                 };
 

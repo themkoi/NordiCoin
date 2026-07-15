@@ -2,8 +2,8 @@ use core::panic::PanicInfo;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    #[cfg(feature = "debug")]
-    crate::error!("{}", info);
+    //#[cfg(feature = "debug")]
+    //crate::error!("{}", info);
 
     cortex_m::interrupt::disable();
 

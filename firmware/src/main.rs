@@ -17,7 +17,8 @@ use static_cell::StaticCell;
 use prelude::*;
 
 #[cfg(feature = "debug")]
-use defmt_rtt as _;
+use {defmt_rtt as _, panic_probe as _};
+#[cfg(not(feature = "debug"))]
 mod panic_handler;
 
 bind_interrupts!(struct Irqs {
@@ -39,7 +40,7 @@ async fn main(spawner: Spawner) {
     info!("Nordicoin start");
 
     // LED
-    spawner.spawn(led_task(peripherals::led::LedController::new(20, p.P0_20)).unwrap());
+    spawner.spawn(led_task(peripherals::led::LedController::new(20, p.P0_20)).nrcrap().await);
     LED_CHANNEL.send(LedCommand::Blink).await; // At init
 
     // Flash
@@ -62,8 +63,8 @@ async fn main(spawner: Spawner) {
     };
     static MPSL: StaticCell<MultiprotocolServiceLayer> = StaticCell::new();
     let mpsl: &mut MultiprotocolServiceLayer<'static> =
-        MPSL.init(mpsl::MultiprotocolServiceLayer::new(mpsl_p, Irqs, lfclk_cfg).unwrap());
-    spawner.spawn(mpsl_task(mpsl).unwrap());
+        MPSL.init(mpsl::MultiprotocolServiceLayer::new(mpsl_p, Irqs, lfclk_cfg).nrcrap().await);
+    spawner.spawn(mpsl_task(mpsl).nrcrap().await);
 
     let sdc_p = sdc::Peripherals::new(
         p.PPI_CH17, p.PPI_CH18, p.PPI_CH20, p.PPI_CH21, p.PPI_CH22, p.PPI_CH23, p.PPI_CH24,
@@ -74,8 +75,8 @@ async fn main(spawner: Spawner) {
 
     static SDC_MEM: StaticCell<sdc::Mem<SDC_MEM_SIZE>> = StaticCell::new();
     let sdc_mem: &mut sdc::Mem<SDC_MEM_SIZE> = SDC_MEM.init(sdc::Mem::new());
-    let sdc: SoftdeviceController<'static> = build_sdc(sdc_p, rng, mpsl, sdc_mem).unwrap();
-    spawner.spawn(ble_task(sdc, adc_reader, flash).unwrap());
+    let sdc: SoftdeviceController<'static> = build_sdc(sdc_p, rng, mpsl, sdc_mem).nrcrap().await;
+    spawner.spawn(ble_task(sdc, adc_reader, flash).nrcrap().await);
 
     // PWM
     spawner.spawn(
@@ -86,6 +87,6 @@ async fn main(spawner: Spawner) {
             p.GPIOTE_CH0,
             p.P0_18.into(),
         ))
-        .unwrap(),
+        .nrcrap().await,
     );
 }
