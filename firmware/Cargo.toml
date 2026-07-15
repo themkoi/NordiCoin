@@ -34,7 +34,6 @@ crc = "3"
 # Debug (optional)
 defmt = { version = "1.0", optional = true }
 defmt-rtt = { version = "1.0", optional = true }
-panic-probe = { version = "1.0" }
 
 cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.0"
@@ -57,7 +56,6 @@ default = ["debug"]
 debug = [
     "dep:defmt",
     "dep:defmt-rtt",
-    "panic-probe/print-defmt",
     "embassy-nrf/defmt",
     "embassy-executor/defmt",
     "embassy-time/defmt",

@@ -9,7 +9,6 @@ use crate::prelude::*;
 
 #[cfg_attr(feature = "debug", derive(Format))]
 pub enum PwmCommand {
-    TurnOff,
     TurnOnFor(u8), // s
 }
 
@@ -120,9 +119,6 @@ pub async fn pwm_task(mut controller: PwmController) {
     controller.turn_off();
     loop {
         match PWM_CHANNEL.receive().await {
-            PwmCommand::TurnOff => {
-                controller.turn_off();
-            }
             PwmCommand::TurnOnFor(seconds) => {
                 select(
                     async {
@@ -145,8 +141,8 @@ pub async fn pwm_task(mut controller: PwmController) {
                     },
                 )
                 .await;
-                controller.turn_off();
             }
         }
+        controller.turn_off();
     }
 }

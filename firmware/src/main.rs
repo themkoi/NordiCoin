@@ -18,7 +18,7 @@ use prelude::*;
 
 #[cfg(feature = "debug")]
 use defmt_rtt as _;
-use panic_probe as _;
+mod panic_handler;
 
 bind_interrupts!(struct Irqs {
     RNG => rng::InterruptHandler<embassy_nrf::peripherals::RNG>;
@@ -37,6 +37,10 @@ async fn main(spawner: Spawner) {
     let p = embassy_nrf::init(config);
 
     info!("Nordicoin start");
+
+    // LED
+    spawner.spawn(led_task(peripherals::led::LedController::new(20, p.P0_20)).unwrap());
+    LED_CHANNEL.send(LedCommand::Blink).await; // At init
 
     // Flash
     static FLASH: StaticCell<peripherals::flash::FlashStorage> = StaticCell::new();
@@ -72,9 +76,6 @@ async fn main(spawner: Spawner) {
     let sdc_mem: &mut sdc::Mem<SDC_MEM_SIZE> = SDC_MEM.init(sdc::Mem::new());
     let sdc: SoftdeviceController<'static> = build_sdc(sdc_p, rng, mpsl, sdc_mem).unwrap();
     spawner.spawn(ble_task(sdc, adc_reader, flash).unwrap());
-
-    // LED
-    spawner.spawn(led_task(peripherals::led::LedController::new(20, p.P0_20)).unwrap());
 
     // PWM
     spawner.spawn(

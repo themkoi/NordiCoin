@@ -8,9 +8,10 @@ pub const BLE_CONN_TIMEOUT_BONDED: Duration = Duration::from_secs(4);
 pub const BLE_DEFAULT_TX_POWER: i8 = trouble_host::advertise::TxPower::Minus40dBm as i8;
 pub const BLE_REFRESH_BATTERY: Duration = Duration::from_secs(60 * 60 * 2); // 2h
 pub const BLINK_ON_CONNECTION: bool = true; // Could be a feature to save a few bytes but nah
+pub const BLINK_ON_PROBLEM: bool = true; // Blink on problem when enabled
 
 // LED
-pub const LED_BLINK_MS: Duration = Duration::from_millis(0);
+pub const LED_BLINK_MS: Duration = Duration::from_millis(5);
 pub const LED_BLINK_FOR_ON_MS: Duration = Duration::from_millis(50);
 pub const LED_BLINK_FOR_OFF_MS: Duration = Duration::from_millis(500);
 

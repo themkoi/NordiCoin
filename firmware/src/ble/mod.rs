@@ -125,10 +125,10 @@ pub async fn ble_task(
                         .await
                         {
                             embassy_futures::select::Either::First(_) => {
-                                warn!("Connection was too long!")
+                                warn!("Connection was too long!");
                             }
                             embassy_futures::select::Either::Second(_) => {
-                                info!("Ending connection")
+                                info!("Ending connection");
                             }
                         }
                     }
