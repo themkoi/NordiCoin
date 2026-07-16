@@ -5,10 +5,9 @@ pub const SDC_MEM_SIZE: usize = 4696;
 pub const BLE_NAME_NOT_BONDED: &'static str = "NordiCoin-";
 pub const BLE_CONN_TIMEOUT_NOT_BONDED: Duration = Duration::from_secs(30);
 pub const BLE_CONN_TIMEOUT_BONDED: Duration = Duration::from_secs(4);
-pub const BLE_DEFAULT_TX_POWER: i8 = trouble_host::advertise::TxPower::Minus40dBm as i8;
+pub const BLE_DEFAULT_TX_POWER: i8 = trouble_host::advertise::TxPower::ZerodBm as i8;
 pub const BLE_REFRESH_BATTERY: Duration = Duration::from_secs(60 * 60 * 2); // 2h
 pub const BLINK_ON_CONNECTION: bool = true; // Could be a feature to save a few bytes but nah
-pub const BLINK_ON_PROBLEM: bool = true; // Blink on problem when enabled
 
 // LED
 pub const LED_BLINK_MS: Duration = Duration::from_millis(5);
@@ -22,3 +21,5 @@ pub const PWM_FREQ_STEP: u16 = 200;
 pub const PWM_BASE_DUTY: u8 = 50;
 pub const PWM_BASE_DELAY_MS: Duration = Duration::from_millis(100);
 
+// Button
+pub const BUTTON_HOLD_TIME: Duration = Duration::from_secs(5);

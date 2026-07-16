@@ -39,7 +39,8 @@ impl LedController {
 
     pub async fn turn_off(&self) {
         let pin_nr = self.pin_nr;
-        let _pin = self.pin.lock().await;
+        let mut pin = self.pin.lock().await;
+        pin.set_high();
         P0.pin_cnf(pin_nr as usize).write(|w| {
             w.set_dir(Dir::Input);
             w.set_input(Input::Disconnect);
@@ -54,49 +55,51 @@ impl LedController {
     }
 }
 
-#[embassy_executor::task]
-pub async fn led_task(controller: LedController) {
-    controller.turn_off().await;
+pub async fn manage_led(controller: LedController) {
     loop {
+        info!("New led loop");
+        controller.turn_off().await;
         match LED_CHANNEL.receive().await {
             LedCommand::Blink => {
                 controller.blink().await;
             }
             LedCommand::TurnOnFor(seconds) => {
-                select(
-                    async {
-                        Timer::after_secs(seconds.into()).await;
-                        info!("Timer runned out for led");
-                    },
-                    async {
-                        select(
-                            async {
-                                loop {
-                                    LED_CHANNEL.ready_to_receive().await;
-                                    if let Ok(v) = LED_CHANNEL.try_peek() {
-                                        if matches!(v, LedCommand::Blink) {
-                                            controller.blink().await;
-                                        } else {
-                                            info!("Received another message in led");
-                                            break;
+                if seconds != 0 {
+                    select(
+                        async {
+                            Timer::after_secs(seconds.into()).await;
+                            info!("Timer runned out for led");
+                        },
+                        async {
+                            select(
+                                async {
+                                    loop {
+                                        LED_CHANNEL.ready_to_receive().await;
+                                        if let Ok(v) = LED_CHANNEL.try_peek() {
+                                            if matches!(v, LedCommand::Blink) {
+                                                LED_CHANNEL.try_receive().ok(); // consume the message
+                                                controller.blink().await;
+                                            } else {
+                                                info!("Received another message in led");
+                                                break;
+                                            }
                                         }
                                     }
-                                }
-                            },
-                            async {
-                                loop {
-                                    controller.turn_on().await;
-                                    Timer::after(LED_BLINK_FOR_ON_MS).await;
-                                    controller.turn_off().await;
-                                    Timer::after(LED_BLINK_FOR_OFF_MS).await;
-                                }
-                            },
-                        )
-                        .await;
-                    },
-                )
-                .await;
-                controller.turn_off().await;
+                                },
+                                async {
+                                    loop {
+                                        controller.turn_on().await;
+                                        Timer::after(LED_BLINK_FOR_ON_MS).await;
+                                        controller.turn_off().await;
+                                        Timer::after(LED_BLINK_FOR_OFF_MS).await;
+                                    }
+                                },
+                            )
+                            .await;
+                        },
+                    )
+                    .await;
+                }
             }
         }
     }

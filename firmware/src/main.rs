@@ -10,7 +10,7 @@ mod peripherals;
 mod prelude;
 
 use embassy_executor::Spawner;
-use embassy_nrf::{bind_interrupts, config::LfclkSource, rng};
+use embassy_nrf::{bind_interrupts, config::LfclkSource, gpio::Pull, rng};
 use nrf_mpsl::MultiprotocolServiceLayer;
 use static_cell::StaticCell;
 
@@ -38,10 +38,6 @@ async fn main(spawner: Spawner) {
     let p = embassy_nrf::init(config);
 
     info!("Nordicoin start");
-
-    // LED
-    spawner.spawn(led_task(peripherals::led::LedController::new(20, p.P0_20)).unwrap());
-    LED_CHANNEL.send(LedCommand::Blink).await; // At init
 
     // Flash
     static FLASH: StaticCell<peripherals::flash::FlashStorage> = StaticCell::new();
@@ -78,15 +74,21 @@ async fn main(spawner: Spawner) {
     let sdc: SoftdeviceController<'static> = build_sdc(sdc_p, rng, mpsl, sdc_mem).unwrap();
     spawner.spawn(ble_task(sdc, adc_reader, flash).unwrap());
 
-    // PWM
+    // Peripherals
     spawner.spawn(
-        pwm_task(peripherals::pwm::PwmController::new(
-            p.TIMER1,
-            p.PPI_CH0,
-            p.PPI_CH1,
-            p.GPIOTE_CH0,
-            p.P0_18.into(),
-        ))
+        peripherals_task(
+            peripherals::pwm::PwmController::new(
+                p.TIMER1,
+                p.PPI_CH0,
+                p.PPI_CH1,
+                p.GPIOTE_CH0,
+                p.P0_18.into(),
+            ),
+            peripherals::led::LedController::new(20, p.P0_20),
+            Input::new(p.P0_16, Pull::Down), // Needs a pull down! and without external resistor
+            flash,
+        )
         .unwrap(),
     );
+    LED_CHANNEL.send(LedCommand::Blink).await; // At init
 }

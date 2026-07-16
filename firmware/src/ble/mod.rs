@@ -131,6 +131,9 @@ pub async fn ble_task(
                                 info!("Ending connection");
                             }
                         }
+                        // To avoid BleHost(Hci(Connection Rejected due to Limited Resources))
+                        drop(conn);
+                        Timer::after(Duration::from_secs(1)).await;
                     }
                     Err(e) => {
                         error!("Advertising error: {:?}", e);

@@ -114,35 +114,36 @@ impl PwmController {
     }
 }
 
-#[embassy_executor::task]
-pub async fn pwm_task(mut controller: PwmController) {
-    controller.turn_off();
+pub async fn manage_pwm(mut controller: PwmController) {
     loop {
+        info!("New pwm loop");
+        controller.turn_off();
         match PWM_CHANNEL.receive().await {
             PwmCommand::TurnOnFor(seconds) => {
-                select(
-                    async {
-                        EmbassyTimer::after_secs(seconds.into()).await;
-                        info!("Timer runned out for pwm");
-                    },
-                    async {
-                        select(
-                            async {
-                                PWM_CHANNEL.ready_to_receive().await;
-                            },
-                            async {
-                                controller.turn_on();
-                                loop {
-                                    controller.sweep().await;
-                                }
-                            },
-                        )
-                        .await;
-                    },
-                )
-                .await;
+                if seconds != 0 {
+                    select(
+                        async {
+                            EmbassyTimer::after_secs(seconds.into()).await;
+                            info!("Timer runned out for pwm");
+                        },
+                        async {
+                            select(
+                                async {
+                                    PWM_CHANNEL.ready_to_receive().await;
+                                },
+                                async {
+                                    controller.turn_on();
+                                    loop {
+                                        controller.sweep().await;
+                                    }
+                                },
+                            )
+                            .await;
+                        },
+                    )
+                    .await;
+                }
             }
         }
-        controller.turn_off();
     }
 }
