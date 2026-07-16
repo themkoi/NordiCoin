@@ -75,7 +75,7 @@ pub async fn ble_task(
     let addr = read_device_address();
     info!(
         "MAC: {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
-        addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]
+        addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]
     );
     let address: Address = Address::random(addr);
 
@@ -115,7 +115,9 @@ pub async fn ble_task(
                             .log();
 
                         if BLINK_ON_CONNECTION {
-                            LED_CHANNEL.send(LedCommand::TurnOnFor(timeout.as_secs() as u8)).await;
+                            LED_CHANNEL
+                                .send(LedCommand::TurnOnFor(timeout.as_secs() as u8))
+                                .await;
                         }
 
                         match select(

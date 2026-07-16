@@ -5,9 +5,14 @@ pub const SDC_MEM_SIZE: usize = 4696;
 pub const BLE_NAME_NOT_BONDED: &'static str = "NordiCoin-";
 pub const BLE_CONN_TIMEOUT_NOT_BONDED: Duration = Duration::from_secs(30);
 pub const BLE_CONN_TIMEOUT_BONDED: Duration = Duration::from_secs(4);
-pub const BLE_DEFAULT_TX_POWER: i8 = trouble_host::advertise::TxPower::ZerodBm as i8;
+pub const BLE_DEFAULT_TX_POWER: i8 = trouble_host::advertise::TxPower::Minus40dBm as i8;
 pub const BLE_REFRESH_BATTERY: Duration = Duration::from_secs(60 * 60 * 2); // 2h
 pub const BLINK_ON_CONNECTION: bool = true; // Could be a feature to save a few bytes but nah
+// Configuring these impacts battery life a lot, but also how easy it is to connect to it
+// TODO: Test higher differences, maybe it will be easier to connect?
+pub const ADV_INTERVAL_MIN_MS: Duration = Duration::from_millis(5000);
+pub const ADV_INTERVAL_MAX_MS: Duration = Duration::from_millis(5100);
+// TODO: Add to flash and default power first and second phy
 
 // LED
 pub const LED_BLINK_MS: Duration = Duration::from_millis(5);

@@ -98,8 +98,9 @@ fn read_identity_root() -> [u32; 4] {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    let config = embassy_nrf::config::Config::default();
-    let _p = embassy_nrf::init(config);
+    let mut c = embassy_nrf::config::Config::default();
+    c.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
+    let _p = embassy_nrf::init(c);
 
     info!("Device info test");
 

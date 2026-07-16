@@ -12,6 +12,10 @@
         "tests/led/Cargo.toml",
         "tests/temp/Cargo.toml",
         "tests/button/Cargo.toml",
+        "tests/flash/Cargo.toml",
+        "tests/mac/Cargo.toml",
+        "tests/rand/Cargo.toml",
+        "tests/time/Cargo.toml"
     ],
     "cSpell.words": [
         "nrf",

@@ -20,6 +20,8 @@ pub async fn manage_button(mut button: Input<'_>, flash: &'static FlashStorage) 
                     flash_data.bonded = false;
                     flash.save(&flash_data).await;
                     Timer::after_millis(2500).await;
+                    info!("Rebooting!");
+                    Timer::after_millis(50).await;
                     cortex_m::peripheral::SCB::sys_reset();
                 }
                 if button.is_high() {

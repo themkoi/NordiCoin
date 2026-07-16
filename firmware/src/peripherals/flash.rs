@@ -1,17 +1,13 @@
-use crate::config::BLE_DEFAULT_TX_POWER;
 
 use core::cell::RefCell;
-
+use crate::prelude::*;
 use crc::{Crc, CRC_32_ISCSI};
 use embassy_nrf::nvmc::Nvmc;
 use embassy_nrf::peripherals::NVMC;
 use embassy_nrf::Peri;
-use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
-use embassy_sync::mutex::Mutex;
 use embedded_storage::nor_flash::{NorFlash, ReadNorFlash};
 use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
-use crate::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize, MaxSize)]
 #[repr(C)]
@@ -57,7 +53,8 @@ impl Default for FlashData {
     }
 }
 
-const FLASH_BUF_SIZE: usize = FlashData::POSTCARD_MAX_SIZE;
+/// Flash buffer size: data + CRC32, rounded up to 4-byte alignment for NVMC writes.
+const FLASH_BUF_SIZE: usize = (FlashData::POSTCARD_MAX_SIZE + 4 + 3) & !3;
 
 extern "C" {
     static storage_start: u8;
@@ -67,16 +64,14 @@ extern "C" {
 static FLASH_STORAGE: Mutex<CriticalSectionRawMutex, RefCell<Option<Nvmc<'static>>>> =
     Mutex::new(RefCell::new(None));
 
-pub struct FlashStorage {
-    _private: (),
-}
+pub struct FlashStorage {}
 
 impl FlashStorage {
     pub async fn new(nvmc: Peri<'static, NVMC>) -> Self {
         let nvmc = Nvmc::new(nvmc);
         let guard = FLASH_STORAGE.lock().await;
         guard.borrow_mut().replace(nvmc);
-        FlashStorage { _private: () }
+        FlashStorage {}
     }
 
     pub async fn save(&self, data: &FlashData) {
@@ -86,18 +81,13 @@ impl FlashStorage {
         let off = core::ptr::addr_of!(storage_start) as u32;
 
         let page_end = off + (core::ptr::addr_of!(storage_end) as u32 - off);
-        nvmc.erase(off, page_end)
-            .map_err(|_| "Flash erase failed")
-            .unwrap();
+        nvmc.erase(off, page_end).unwrap();
 
         let mut buf = [0u8; FLASH_BUF_SIZE];
         let crc = Crc::<u32>::new(&CRC_32_ISCSI);
-        let used = postcard::to_slice_crc32(&data, &mut buf, crc.digest())
-            .map_err(|_| "Serialization failed")
-            .unwrap();
-        nvmc.write(off, used)
-            .map_err(|_| "Flash write failed")
-            .unwrap();
+        postcard::to_slice_crc32(&data, &mut buf, crc.digest()).unwrap();
+        // Write the full aligned buffer to satisfy NVMC 4-byte alignment requirement
+        nvmc.write(off, &buf).unwrap();
     }
 
     pub async fn read(&self) -> FlashData {

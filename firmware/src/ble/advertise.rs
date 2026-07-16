@@ -94,17 +94,14 @@ where
                     }
                 };
 
-                const INTERVAL_MIN_MS: u64 = 5000;
-                const INTERVAL_MAX_MS: u64 = 5100;
-
                 let adv_params = AdvertisementParameters {
                     primary_phy: Default::default(),
                     secondary_phy: Default::default(),
-                    tx_power: tx_power_from_i8(flash_data.tx_power),
+                    tx_power: tx_power_from_i8(BLE_DEFAULT_TX_POWER), // TODO use flash after testing
                     timeout: None,
                     max_events: None,
-                    interval_min: Duration::from_millis(INTERVAL_MIN_MS),
-                    interval_max: Duration::from_millis(INTERVAL_MAX_MS),
+                    interval_min: ADV_INTERVAL_MIN_MS,
+                    interval_max: ADV_INTERVAL_MAX_MS,
                     filter_policy: AdvFilterPolicy::default(),
                     channel_map: None, // Can't be changed
                     fragment: false,

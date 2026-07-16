@@ -60,7 +60,6 @@ impl PwmController {
         }
     }
 
-    // Set PWM frequency in Hz.
     // Call `set_duty_percent()` again after.
     pub fn set_frequency(&mut self, hz: u32) {
         let period = 16_000_000 / hz;
@@ -102,36 +101,24 @@ const FREQ_STEP: i32 = 150;
 const BASE_DUTY: u8 = 35;
 const BASE_DELAY_MS: u64 = 150;
 
-async fn sweep_delay(pwm: &mut PwmController, freq: u32) {
-    info!("F={} Hz  D={} %  delay={} ms", freq, BASE_DUTY, BASE_DELAY_MS);
-    pwm.set_duty_percent(BASE_DUTY);
-    EmbassyTimer::after(Duration::from_millis(BASE_DELAY_MS)).await;
-    pwm.set_duty_percent(0);
-    EmbassyTimer::after(Duration::from_millis(BASE_DELAY_MS)).await;
-}
-
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    let config = embassy_nrf::config::Config::default();
-    let p = embassy_nrf::init(config);
+    let mut c = embassy_nrf::config::Config::default();
+    c.lfclk_source = embassy_nrf::config::LfclkSource::ExternalXtal;
+    let p = embassy_nrf::init(c);
 
     let mut pwm_controller =
         PwmController::new(p.TIMER0, p.PPI_CH0, p.PPI_CH1, p.GPIOTE_CH0, p.P0_18.into());
 
+    pwm_controller.set_frequency(BASE_FREQ);
+    pwm_controller.set_duty_percent(BASE_DUTY);
+    EmbassyTimer::after_secs(5).await;
+
+    info!("Turning it off");
+    EmbassyTimer::after_secs(1).await;
+    pwm_controller.turn_off();
+    info!("It's off");
     loop {
-        let mut delta = -FREQ_TOLERANCE;
-        while delta <= FREQ_TOLERANCE {
-            let freq = (BASE_FREQ as i32 + delta) as u32;
-            pwm_controller.set_frequency(freq);
-            sweep_delay(&mut pwm_controller, freq).await;
-            delta += FREQ_STEP;
-        }
-        delta = FREQ_TOLERANCE;
-        while delta >= -FREQ_TOLERANCE {
-            let freq = (BASE_FREQ as i32 + delta) as u32;
-            pwm_controller.set_frequency(freq);
-            sweep_delay(&mut pwm_controller, freq).await;
-            delta -= FREQ_STEP;
-        }
+        EmbassyTimer::after_secs(120).await;
     }
 }

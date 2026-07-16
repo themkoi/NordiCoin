@@ -6,3 +6,4 @@ target = "thumbv7em-none-eabi"
 
 [env]
 DEFMT_LOG = "info"
+TROUBLE_HOST_CLIENT_ATT_TABLE_SIZE = "4"

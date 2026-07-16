@@ -46,3 +46,4 @@ pub use embassy_sync::channel::Channel;
 pub use crate::other::*;
 pub use crate::peripherals::flash::*;
 pub use embassy_nrf::gpio::Input;
+pub use embassy_sync::mutex::Mutex;

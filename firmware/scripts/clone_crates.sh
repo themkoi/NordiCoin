@@ -9,7 +9,6 @@ REPOS=(
   "https://github.com/embassy-rs/trouble.git"
   "https://github.com/embassy-rs/embassy.git"
   "https://github.com/nrf-rs/nrf-hal.git"
-  "https://github.com/embassy-rs/ekv.git"
 )
 
 for url in "${REPOS[@]}"; do
