@@ -1,5 +1,5 @@
 use embassy_nrf::gpiote::{OutputChannel, OutputChannelPolarity};
-use embassy_nrf::peripherals::{PPI_CH0, PPI_CH1, TIMER1};
+use embassy_nrf::peripherals::{PPI_CH0, PPI_CH1};
 use embassy_nrf::ppi::Ppi;
 use embassy_nrf::timer::{Frequency, Timer};
 use embassy_time::Timer as EmbassyTimer;
@@ -23,7 +23,7 @@ pub struct PwmController {
 
 impl PwmController {
     pub fn new(
-        timer: embassy_nrf::Peri<'static, TIMER1>,
+        timer: embassy_nrf::Peri<'static, embassy_nrf::peripherals::TIMER1>,
         ppi_ch0: embassy_nrf::Peri<'static, PPI_CH0>,
         ppi_ch1: embassy_nrf::Peri<'static, PPI_CH1>,
         gpiote_ch0: embassy_nrf::Peri<'static, embassy_nrf::peripherals::GPIOTE_CH0>,
@@ -32,12 +32,7 @@ impl PwmController {
         let timer = Timer::new(timer);
         timer.set_frequency(Frequency::F16MHz);
 
-        let period = 16000; // 1 kHz PWM at F16MHz
-        timer.cc(0).write(period);
-        timer.cc(1).write(0); // 0% duty initially
-
         timer.cc(0).short_compare_clear();
-
         let gpiote = OutputChannel::new(
             gpiote_ch0,
             pin,
@@ -76,6 +71,8 @@ impl PwmController {
     // Turn off PWM output to save power.
     pub fn turn_off(&mut self) {
         self.timer.stop();
+        self.timer.regs().tasks_shutdown().write_value(1);
+        self.timer.clear();
         self.ppi_set.disable();
         self.ppi_clr.disable();
     }
