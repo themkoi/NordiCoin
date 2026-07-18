@@ -19,7 +19,7 @@ pub struct PwmController {
 
 impl PwmController {
     pub fn new(
-        timer: embassy_nrf::Peri<'static, embassy_nrf::peripherals::TIMER0>,
+        timer: embassy_nrf::Peri<'static, embassy_nrf::peripherals::TIMER1>,
         ppi_ch0: embassy_nrf::Peri<'static, PPI_CH0>,
         ppi_ch1: embassy_nrf::Peri<'static, PPI_CH1>,
         gpiote_ch0: embassy_nrf::Peri<'static, embassy_nrf::peripherals::GPIOTE_CH0>,
@@ -137,7 +137,7 @@ async fn main(_spawner: Spawner) {
     let p = embassy_nrf::init(c);
 
     let mut pwm_controller =
-        PwmController::new(p.TIMER0, p.PPI_CH0, p.PPI_CH1, p.GPIOTE_CH0, p.P0_18.into());
+        PwmController::new(p.TIMER1, p.PPI_CH0, p.PPI_CH1, p.GPIOTE_CH0, p.P0_18.into());
 
     info!("Starting!");
     loop {

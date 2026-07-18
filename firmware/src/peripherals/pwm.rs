@@ -1,4 +1,8 @@
 use embassy_nrf::gpiote::{OutputChannel, OutputChannelPolarity};
+use embassy_nrf::pac;
+use embassy_nrf::pac::gpio::vals::Drive;
+use embassy_nrf::pac::gpio::vals::{Dir, Input, Pull};
+use embassy_nrf::pac::gpiote::vals::{Mode, Outinit, Polarity};
 use embassy_nrf::peripherals::{PPI_CH0, PPI_CH1};
 use embassy_nrf::ppi::Ppi;
 use embassy_nrf::timer::{Frequency, Timer};
@@ -75,9 +79,38 @@ impl PwmController {
         self.timer.clear();
         self.ppi_set.disable();
         self.ppi_clr.disable();
+
+        // If GPIOTE & GPIO channels are not closed properly, then sometimes consumption could jump up to 8mA, randomly
+        let g = pac::GPIOTE;
+        g.config(0).write(|w| w.set_mode(Mode::Disabled));
+        // Clear the interrupt for channel 0 (INTNUM=0 on nrf52)
+        g.intenclr(0).write(|w| w.0 = 1 << 0);
+
+        pac::P0.pin_cnf(18).write(|w| {
+            w.set_dir(Dir::Input);
+            w.set_input(Input::Disconnect);
+            w.set_pull(Pull::Disabled);
+        });
     }
 
     pub fn turn_on(&mut self) {
+        let p = embassy_nrf::pac::P0;
+        p.pin_cnf(18).write(|w| {
+            w.set_dir(embassy_nrf::pac::gpio::vals::Dir::Output);
+            w.set_input(embassy_nrf::pac::gpio::vals::Input::Disconnect);
+            w.set_pull(embassy_nrf::pac::gpio::vals::Pull::Disabled);
+            w.set_drive(Drive::H0h1);
+        });
+
+        let g = embassy_nrf::pac::GPIOTE;
+        g.config(0).write(|w| {
+            w.set_mode(Mode::Task);
+            w.set_outinit(Outinit::Low);
+            w.set_polarity(Polarity::Toggle);
+            w.set_psel(18);
+        });
+        g.events_in(0).write_value(0);
+
         self.timer.clear();
         self.ppi_set.enable();
         self.ppi_clr.enable();
