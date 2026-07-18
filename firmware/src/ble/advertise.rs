@@ -95,9 +95,11 @@ where
                 };
 
                 let adv_params = AdvertisementParameters {
-                    primary_phy: Default::default(),
-                    secondary_phy: Default::default(),
-                    tx_power: tx_power_from_i8(BLE_DEFAULT_TX_POWER), // TODO use flash after testing
+                    // Tests: Le2M makes BleHost(Hci(Invalid HCI Command Parameters))
+                    // LeCoded too, LeCodedS2 too, so nothing
+                    primary_phy: PhyKind::Le1M,
+                    secondary_phy: PhyKind::Le1M,
+                    tx_power: tx_power_from_i8(flash_data.tx_power), // TODO use flash after testing
                     timeout: None,
                     max_events: None,
                     interval_min: ADV_INTERVAL_MIN_MS,
