@@ -72,6 +72,8 @@ impl PwmController {
     // Turn off PWM output to save power.
     pub fn turn_off(&mut self) {
         self.timer.stop();
+        self.timer.regs().tasks_shutdown().write_value(1);
+        self.timer.clear();
         self.ppi_set.disable();
         self.ppi_clr.disable();
     }
@@ -95,11 +97,7 @@ impl PwmController {
 }
 
 const BASE_FREQ: u32 = 4950;
-const FREQ_TOLERANCE: i32 = 300;
-const FREQ_STEP: i32 = 150;
-
 const BASE_DUTY: u8 = 35;
-const BASE_DELAY_MS: u64 = 150;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -110,15 +108,22 @@ async fn main(_spawner: Spawner) {
     let mut pwm_controller =
         PwmController::new(p.TIMER0, p.PPI_CH0, p.PPI_CH1, p.GPIOTE_CH0, p.P0_18.into());
 
-    pwm_controller.set_frequency(BASE_FREQ);
-    pwm_controller.set_duty_percent(BASE_DUTY);
-    EmbassyTimer::after_secs(5).await;
-
-    info!("Turning it off");
-    EmbassyTimer::after_secs(1).await;
-    pwm_controller.turn_off();
-    info!("It's off");
+    info!("Starting!");
     loop {
-        EmbassyTimer::after_secs(120).await;
+        pwm_controller.set_frequency(BASE_FREQ);
+        pwm_controller.set_duty_percent(BASE_DUTY);
+        EmbassyTimer::after_secs(5).await;
+
+        info!("Turning it off");
+        EmbassyTimer::after_secs(1).await;
+        pwm_controller.turn_off();
+        info!("It's off");
+
+        EmbassyTimer::after_secs(3).await;
+
+        info!("Turning it on");
+        EmbassyTimer::after_secs(1).await;
+        pwm_controller.turn_on();
+        info!("It's on");
     }
 }

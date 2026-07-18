@@ -17,8 +17,6 @@
         "tests/rand/Cargo.toml",
         "tests/time/Cargo.toml"
     ],
-    "cSpell.words": [
-        "nrf",
-        "embassy"
-    ]
+    "rust-analyzer.cachePriming.enable": false,
+    "rust-analyzer.lru.capacity": 44,
 }
