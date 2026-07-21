@@ -1,0 +1,83 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": "scripts/clean.sh",
+            "icon": {
+                "id": "close-all"
+            },
+            "options": {
+                "statusbar": {
+                    "color": "#ffffffe0"
+                }
+            }
+        },
+        {
+            "label": "Install",
+            "type": "shell",
+            "command": "scripts/install.sh",
+            "icon": {
+                "id": "send-to-remote-agent"
+            },
+            "options": {
+                "statusbar": {
+                    "color": "#ffff00"
+                }
+            }
+        },
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "scripts/build.sh",
+            "icon": {
+                "id": "build"
+            },
+            "options": {
+                "statusbar": {
+                    "color": "#fcfcca"
+                }
+            }
+        },
+        {
+            "label": "Build All",
+            "type": "shell",
+            "command": "scripts/build_all.sh",
+            "icon": {
+                "id": "person-filled"
+            },
+            "options": {
+                "statusbar": {
+                    "color": "#ff8800"
+                }
+            }
+        },
+        {
+            "label": "Run Android",
+            "type": "shell",
+            "command": "scripts/run_android.sh",
+            "icon": {
+                "id": "run"
+            },
+            "options": {
+                "statusbar": {
+                    "color": "#ff0000"
+                }
+            }
+        },
+        {
+            "label": "Regenerate Code",
+            "type": "shell",
+            "command": "scripts/regenerate_code.sh",
+            "icon": {
+                "id": "refresh"
+            },
+            "options": {
+                "statusbar": {
+                    "color": "#ff00ff"
+                }
+            }
+        }
+    ]
+}
