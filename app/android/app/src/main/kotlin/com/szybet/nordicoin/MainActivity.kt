@@ -1,4 +1,4 @@
-package com.example.nordicoin
+package com.szybet.nordicoin
 
 import io.flutter.embedding.android.FlutterActivity
 
