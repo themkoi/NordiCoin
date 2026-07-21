@@ -8,3 +8,5 @@ sleep 0.5
 killall -9 java 2>/dev/null
 killall -9 adb 2>/dev/null
 sleep 0.5
+
+./scripts/install.sh

@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'data.dart';
+import 'pages/ble_permission.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,8 +36,54 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
+      home: const BleGateWrapper(),
     );
+  }
+}
+
+// Manages bluetooth permissions -> main page
+class BleGateWrapper extends StatefulWidget {
+  const BleGateWrapper({super.key});
+
+  @override
+  State<BleGateWrapper> createState() => _BleGateWrapperState();
+}
+
+class _BleGateWrapperState extends State<BleGateWrapper> {
+  BluetoothAdapterState _adapterState = BluetoothAdapterState.unknown;
+  bool _showMain = false;
+
+  late StreamSubscription<BluetoothAdapterState> _adapterStateSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _adapterStateSubscription = FlutterBluePlus.adapterState.listen((state) {
+      _adapterState = state;
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _adapterStateSubscription.cancel();
+    super.dispose();
+  }
+
+  void _onBluetoothReady() {
+    setState(() {
+      _showMain = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_adapterState == BluetoothAdapterState.on || _showMain) {
+      return const MyHomePage();
+    }
+    return BlePermissionGate(onBluetoothReady: _onBluetoothReady);
   }
 }
 
@@ -62,6 +112,13 @@ class _MyHomePageState extends State<MyHomePage> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
+        elevation: 8,
+        selectedFontSize: 16,
+        unselectedFontSize: 12,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
+        selectedIconTheme: IconThemeData(size: 30, opacity: 1.0),
+        unselectedIconTheme: IconThemeData(size: 24, opacity: 0.6),
         onTap: (index) {
           setState(() {
             _currentIndex = index;
