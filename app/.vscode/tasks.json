@@ -41,7 +41,20 @@
             }
         },
         {
-            "label": "Build All",
+            "label": "Build debug",
+            "type": "shell",
+            "command": "scripts/build_debug.sh",
+            "icon": {
+                "id": "debug-alt"
+            },
+            "options": {
+                "statusbar": {
+                    "color": "#00ff00"
+                }
+            }
+        },
+        {
+            "label": "Build all",
             "type": "shell",
             "command": "scripts/build_all.sh",
             "icon": {
@@ -54,7 +67,7 @@
             }
         },
         {
-            "label": "Run Android",
+            "label": "Run on Android",
             "type": "shell",
             "command": "scripts/run_android.sh",
             "icon": {
@@ -67,7 +80,7 @@
             }
         },
         {
-            "label": "Regenerate Code",
+            "label": "Regenerate code",
             "type": "shell",
             "command": "scripts/regenerate_code.sh",
             "icon": {
@@ -78,6 +91,6 @@
                     "color": "#ff00ff"
                 }
             }
-        }
+        },
     ]
 }
