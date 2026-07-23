@@ -60,6 +60,7 @@ class _BleGateWrapperState extends State<BleGateWrapper> {
     _check();
   }
 
+  // Similar to _checkPermissions in ble_permission
   Future<void> _check() async {
     final state = await FlutterBluePlus.adapterState.first;
     final fine = await Permission.location.isGranted;

@@ -84,14 +84,15 @@ class DeviceAdapter extends TypeAdapter<Device> {
       lastSeenTime: fields[3] as DateTime,
       lastSeenRssi: fields[4] as int,
       id: fields[5] as String,
-      deviceSettings: fields[6] as OnAppDevice,
+      lastSeenUptimeS: fields[6] as int,
+      deviceSettings: fields[7] as OnAppDevice,
     );
   }
 
   @override
   void write(BinaryWriter writer, Device obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.aliasName)
       ..writeByte(1)
@@ -105,6 +106,8 @@ class DeviceAdapter extends TypeAdapter<Device> {
       ..writeByte(5)
       ..write(obj.id)
       ..writeByte(6)
+      ..write(obj.lastSeenUptimeS)
+      ..writeByte(7)
       ..write(obj.deviceSettings);
   }
 
