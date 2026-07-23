@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'data.dart';
 import 'pages/ble_permission.dart';
+import 'pages/scan.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +43,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Manages bluetooth permissions -> main page
+// Gate: shows BlePermissionGate until all requirements are met, then MyHomePage
 class BleGateWrapper extends StatefulWidget {
   const BleGateWrapper({super.key});
 
@@ -50,40 +52,38 @@ class BleGateWrapper extends StatefulWidget {
 }
 
 class _BleGateWrapperState extends State<BleGateWrapper> {
-  BluetoothAdapterState _adapterState = BluetoothAdapterState.unknown;
-  bool _showMain = false;
-
-  late StreamSubscription<BluetoothAdapterState> _adapterStateSubscription;
+  bool _allGranted = false;
 
   @override
   void initState() {
     super.initState();
-    _adapterStateSubscription = FlutterBluePlus.adapterState.listen((state) {
-      _adapterState = state;
-      if (mounted) {
-        setState(() {});
-      }
-    });
+    _check();
   }
 
-  @override
-  void dispose() {
-    _adapterStateSubscription.cancel();
-    super.dispose();
+  Future<void> _check() async {
+    final state = await FlutterBluePlus.adapterState.first;
+    final fine = await Permission.location.isGranted;
+    final bg = await Permission.locationAlways.isGranted;
+    final bt = await Permission.bluetoothScan.isGranted;
+    if (mounted) {
+      setState(() {
+        _allGranted = state == BluetoothAdapterState.on && fine && bg && bt;
+      });
+    }
   }
 
-  void _onBluetoothReady() {
+  void _onReady() {
     setState(() {
-      _showMain = true;
+      _allGranted = true;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_adapterState == BluetoothAdapterState.on || _showMain) {
+    if (_allGranted) {
       return const MyHomePage();
     }
-    return BlePermissionGate(onBluetoothReady: _onBluetoothReady);
+    return BlePermissionGate(onBluetoothReady: _onReady);
   }
 }
 
@@ -136,8 +136,12 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        tooltip: 'Action',
+        onPressed: () {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (context) => const ScanScreen()));
+        },
+        tooltip: 'Scan Devices',
         child: const Icon(Icons.add),
       ),
     );

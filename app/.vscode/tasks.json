@@ -15,6 +15,19 @@
             }
         },
         {
+            "label": "Uninstall",
+            "type": "shell",
+            "command": "scripts/uninstall.sh",
+            "icon": {
+                "id": "trash"
+            },
+            "options": {
+                "statusbar": {
+                    "color": "#ff4444"
+                }
+            }
+        },
+        {
             "label": "Install",
             "type": "shell",
             "command": "scripts/install.sh",

@@ -1,0 +1,229 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
+import '../utils/snackbar.dart';
+
+class ScanScreen extends StatefulWidget {
+  const ScanScreen({super.key});
+
+  @override
+  State<ScanScreen> createState() => _ScanScreenState();
+}
+
+class _ScanScreenState extends State<ScanScreen> {
+  List<ScanResult> _scanResults = [];
+  bool _isScanning = false;
+  late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
+  late StreamSubscription<bool> _isScanningSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _scanResultsSubscription = FlutterBluePlus.scanResults.listen(
+      (results) {
+        if (mounted) {
+          setState(() => _scanResults = results);
+        }
+      },
+      onError: (e) {
+        Snackbar.show(
+          SnackbarLocation.secondary,
+          prettyException("Scan Error:", e),
+          success: false,
+        );
+      },
+    );
+
+    _isScanningSubscription = FlutterBluePlus.isScanning.listen((state) {
+      if (mounted) {
+        setState(() => _isScanning = state);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scanResultsSubscription.cancel();
+    _isScanningSubscription.cancel();
+    super.dispose();
+  }
+
+  Future onScanPressed() async {
+    try {
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 15),
+        androidUsesFineLocation: true,
+      );
+    } catch (e) {
+      Snackbar.show(
+        SnackbarLocation.secondary,
+        prettyException("Start Scan Error:", e),
+        success: false,
+      );
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future onStopPressed() async {
+    try {
+      FlutterBluePlus.stopScan();
+    } catch (e) {
+      Snackbar.show(
+        SnackbarLocation.secondary,
+        prettyException("Stop Scan Error:", e),
+        success: false,
+      );
+    }
+  }
+
+  void onConnectPressed(BluetoothDevice device) {}
+
+  Future onRefresh() {
+    if (_isScanning == false) {
+      FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 15),
+        androidUsesFineLocation: true,
+      );
+    }
+    if (mounted) {
+      setState(() {});
+    }
+    return Future.delayed(Duration(milliseconds: 500));
+  }
+
+  Widget buildScanButton() {
+    final button = _isScanning
+        ? ElevatedButton(
+            onPressed: onStopPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("STOP"),
+          )
+        : ElevatedButton(
+            onPressed: onScanPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("SCAN"),
+          );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [if (_isScanning) buildSpinner(), button],
+    );
+  }
+
+  Widget buildSpinner() {
+    return const Padding(
+      padding: EdgeInsets.only(right: 20.0),
+      child: SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2.5),
+      ),
+    );
+  }
+
+  Iterable<Widget> _buildScanResultTiles() {
+    return _scanResults.map(
+      (r) => ScanResultTile(result: r, onTap: () => onConnectPressed(r.device)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaffoldMessenger(
+      key: Snackbar.snackBarKeySecondary,
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: const Text('Find Devices'),
+          actions: [buildScanButton(), const SizedBox(width: 15)],
+        ),
+        body: RefreshIndicator(
+          onRefresh: onRefresh,
+          child: ListView(children: <Widget>[..._buildScanResultTiles()]),
+        ),
+      ),
+    );
+  }
+}
+
+class ScanResultTile extends StatefulWidget {
+  const ScanResultTile({super.key, required this.result, this.onTap});
+
+  final ScanResult result;
+  final VoidCallback? onTap;
+
+  @override
+  State<ScanResultTile> createState() => _ScanResultTileState();
+}
+
+class _ScanResultTileState extends State<ScanResultTile> {
+  late StreamSubscription<BluetoothConnectionState>
+  _connectionStateSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _connectionStateSubscription = widget.result.device.connectionState.listen((
+      state,
+    ) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectionStateSubscription.cancel();
+    super.dispose();
+  }
+
+  Widget _buildTitle(BuildContext context) {
+    if (widget.result.device.platformName.isNotEmpty) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            widget.result.device.platformName,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            widget.result.device.remoteId.str,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      );
+    } else {
+      return Text(widget.result.device.remoteId.str);
+    }
+  }
+
+  // When list of devices will be built, then check here for it, if so, show "Already bonded"
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: _buildTitle(context),
+      leading: Text(widget.result.rssi.toString()),
+      trailing: ElevatedButton(
+        onPressed: widget.onTap,
+        child: const Text('Connect'),
+      ),
+    );
+  }
+}
