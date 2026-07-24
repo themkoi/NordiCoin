@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'consts.dart';
 import 'data.dart';
 import 'pages/ble_permission.dart';
 import 'pages/scan.dart';
@@ -17,8 +18,21 @@ void main() async {
   Hive.registerAdapter(OnAppDeviceAdapter());
   Hive.registerAdapter(DeviceAdapter());
   Hive.registerAdapter(SettingsAdapter());
-  await Hive.openBox('devices');
-  await Hive.openBox('settings');
+  final devicesBox = await Hive.openBox(hiveBoxDevices);
+  final settingsBox = await Hive.openBox(hiveBoxSettings);
+
+  if (settingsBox.isEmpty) {
+    final defaultSettings = Settings(defaultDeviceSettings: OnAppDevice());
+    await settingsBox.put(0, defaultSettings);
+  }
+
+  print('Hive boxes opened:');
+  print(
+    '$hiveBoxDevices: ${devicesBox.length} items, keys=${devicesBox.keys.toList()}',
+  );
+  print(
+    '$hiveBoxSettings: ${settingsBox.length} items, keys=${settingsBox.keys.toList()}',
+  );
 
   runApp(const MyApp());
 }

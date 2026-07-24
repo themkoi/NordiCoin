@@ -84,7 +84,7 @@ class DeviceAdapter extends TypeAdapter<Device> {
       lastSeenTime: fields[3] as DateTime,
       lastSeenRssi: fields[4] as int,
       id: fields[5] as String,
-      lastSeenUptimeS: fields[6] as int,
+      lastSeenUptimeM: fields[6] as int,
       deviceSettings: fields[7] as OnAppDevice,
     );
   }
@@ -106,7 +106,7 @@ class DeviceAdapter extends TypeAdapter<Device> {
       ..writeByte(5)
       ..write(obj.id)
       ..writeByte(6)
-      ..write(obj.lastSeenUptimeS)
+      ..write(obj.lastSeenUptimeM)
       ..writeByte(7)
       ..write(obj.deviceSettings);
   }

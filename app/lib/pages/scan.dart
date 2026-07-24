@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
+import '../consts.dart';
 import '../utils/snackbar.dart';
+import '../utils/ble.dart';
+import '../data.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -81,7 +86,57 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  void onConnectPressed(BluetoothDevice device) {}
+  Future<void> onConnectPressed(BluetoothDevice device) async {
+    final box = Hive.box(hiveBoxDevices);
+    final deviceName = device.platformName;
+    final deviceId = deviceName.contains('-')
+        ? deviceName.split('-').skip(1).join('-')
+        : deviceName;
+
+    await connectAndOperate(
+      macAddress: device.remoteId.str,
+      context: context,
+      operationMessage: "Setting up device...",
+      operation: (connectedDevice) async {
+        final allChars = <BluetoothCharacteristic>[];
+        for (final service in connectedDevice.servicesList) {
+          allChars.addAll(service.characteristics);
+        }
+
+        BluetoothCharacteristic charFor(Guid uuid) {
+          return allChars.firstWhere((c) => c.uuid == uuid);
+        }
+
+        final bondedChar = charFor(bondedCharUuid);
+        await bondedChar.write([1]);
+
+        final settingsBox = Hive.box(hiveBoxSettings);
+        final settings = settingsBox.get(0) as Settings;
+        final defaultSettings = settings.defaultDeviceSettings;
+        final txPowerChar = charFor(txPowerCharUuid);
+        await txPowerChar.write([defaultSettings.txPower]);
+
+        final uptimeChar = charFor(uptimeCharUuid);
+        final uptimeBytes = await uptimeChar.read();
+        final uptimeMinutes = Uint32List.fromList(
+          uptimeBytes,
+        ).buffer.asByteData().getUint32(0);
+
+        final onAppDevice = OnAppDevice(txPower: defaultSettings.txPower);
+
+        final newDevice = Device(
+          aliasName: device.platformName,
+          macAddress: device.remoteId.str,
+          id: deviceId,
+          lastSeenTime: DateTime.now(),
+          lastSeenUptimeM: uptimeMinutes,
+          deviceSettings: onAppDevice,
+        );
+
+        box.put(box.values.length, newDevice);
+      },
+    );
+  }
 
   Future onRefresh() {
     if (_isScanning == false) {
@@ -214,7 +269,7 @@ class _ScanResultTileState extends State<ScanResultTile> {
     }
   }
 
-  // When list of devices will be built, then check here for it, if so, show "Already bonded"
+  // When list of devices will be done, then check here for it, if so, show "Already bonded"
   @override
   Widget build(BuildContext context) {
     return ListTile(

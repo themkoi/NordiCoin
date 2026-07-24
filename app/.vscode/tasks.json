@@ -54,9 +54,9 @@
             }
         },
         {
-            "label": "Build debug",
+            "label": "Run android",
             "type": "shell",
-            "command": "scripts/build_debug.sh",
+            "command": "scripts/run_android.sh",
             "icon": {
                 "id": "debug-alt"
             },
@@ -79,19 +79,7 @@
                 }
             }
         },
-        {
-            "label": "Run on Android",
-            "type": "shell",
-            "command": "scripts/run_android.sh",
-            "icon": {
-                "id": "run"
-            },
-            "options": {
-                "statusbar": {
-                    "color": "#ff0000"
-                }
-            }
-        },
+
         {
             "label": "Regenerate code",
             "type": "shell",

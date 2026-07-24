@@ -1,5 +1,8 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
+const String hiveBoxDevices = 'devices';
+const String hiveBoxSettings = 'settings';
+
 /// NordCoin Service UUID (16-bit: 0x0001)
 final Guid nordCoinServiceUuid = Guid("00000001-0000-1000-8000-00805f9b34fb");
 

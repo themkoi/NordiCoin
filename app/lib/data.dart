@@ -84,7 +84,7 @@ class Device extends HiveObject {
   late String id;
 
   @HiveField(6)
-  late int lastSeenUptimeS;
+  late int lastSeenUptimeM;
 
   @HiveField(7)
   late OnAppDevice deviceSettings;
@@ -96,7 +96,7 @@ class Device extends HiveObject {
     required this.lastSeenTime,
     this.lastSeenRssi = 0,
     this.id = '',
-    this.lastSeenUptimeS = 0,
+    this.lastSeenUptimeM = 0,
     required this.deviceSettings,
   });
 }
