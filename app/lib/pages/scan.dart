@@ -27,6 +27,13 @@ class _ScanScreenState extends State<ScanScreen> {
   void initState() {
     super.initState();
 
+    // Clear on init
+    FlutterBluePlus.stopScan();
+    setState(() {
+      _scanResults = [];
+      _isScanning = false;
+    });
+
     _scanResultsSubscription = FlutterBluePlus.scanResults.listen(
       (results) {
         if (mounted) {
@@ -93,7 +100,7 @@ class _ScanScreenState extends State<ScanScreen> {
         ? deviceName.split('-').skip(1).join('-')
         : deviceName;
 
-    await connectAndOperate(
+    final success = await connectAndOperate(
       macAddress: device.remoteId.str,
       context: context,
       operationMessage: "Setting up device...",
@@ -136,6 +143,10 @@ class _ScanScreenState extends State<ScanScreen> {
         box.put(box.values.length, newDevice);
       },
     );
+
+    if (success && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   Future onRefresh() {
@@ -249,15 +260,16 @@ class _ScanResultTileState extends State<ScanResultTile> {
   }
 
   Widget _buildTitle(BuildContext context) {
-    if (widget.result.device.platformName.isNotEmpty) {
+    // Prefer advName from advertisement data as it reflects the current
+    // advertisement, not the cached platformName which may be stale after
+    // the device changed its advertising name post-connection
+    final displayName = widget.result.advertisementData.advName;
+    if (displayName.isNotEmpty) {
       return Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            widget.result.device.platformName,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(displayName, overflow: TextOverflow.ellipsis),
           Text(
             widget.result.device.remoteId.str,
             style: Theme.of(context).textTheme.bodySmall,

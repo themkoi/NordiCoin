@@ -5,7 +5,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 typedef DeviceOperation = Future<void> Function(BluetoothDevice device);
 
-Future<void> connectAndOperate({
+Future<bool> connectAndOperate({
   required String macAddress,
   required DeviceOperation operation,
   BuildContext? context,
@@ -18,6 +18,7 @@ Future<void> connectAndOperate({
     dialogState = _showLoadingDialog(context, "Connecting");
   }
 
+  var hasError = false;
   try {
     await device.connect();
 
@@ -30,26 +31,41 @@ Future<void> connectAndOperate({
       _updateLoadingDialog(dialogState, operationMessage);
     }
     await operation(device);
+  } catch (e) {
+    hasError = true;
+    if (dialogState != null) {
+      dialogState.showError("Error: $e");
+    }
+    return false;
   } finally {
-    if (dialogState != null) {
-      _updateLoadingDialog(dialogState, "Disconnecting");
-    }
-    if (device.isConnected) {
-      await device.disconnect();
-    }
-    if (dialogState != null) {
-      dialogState.close();
+    if (hasError) {
+      if (device.isConnected) {
+        await device.disconnect();
+      }
+    } else {
+      if (dialogState != null) {
+        _updateLoadingDialog(dialogState, "Disconnecting");
+      }
+      if (device.isConnected) {
+        await device.disconnect();
+      }
+      if (dialogState != null) {
+        dialogState.close();
+      }
     }
   }
+  return true;
 }
 
 class DialogState {
   final BuildContext context;
   final void Function(String message) update;
+  final void Function(String message) showError;
   final void Function() close;
   DialogState({
     required this.context,
     required this.update,
+    required this.showError,
     required this.close,
   });
 }
@@ -57,6 +73,7 @@ class DialogState {
 DialogState _showLoadingDialog(BuildContext context, String message) {
   late StateSetter setState;
   String currentMessage = message;
+  bool isError = false;
 
   showDialog(
     context: context,
@@ -72,7 +89,14 @@ DialogState _showLoadingDialog(BuildContext context, String message) {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(),
+                    if (!isError)
+                      const CircularProgressIndicator()
+                    else
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
                     const SizedBox(height: 16),
                     Text(currentMessage),
                     const SizedBox(height: 16),
@@ -82,7 +106,7 @@ DialogState _showLoadingDialog(BuildContext context, String message) {
                           Navigator.of(dialogContext).pop();
                         }
                       },
-                      child: const Text("Cancel"),
+                      child: Text(isError ? "Ok" : "Cancel"),
                     ),
                   ],
                 ),
@@ -99,6 +123,13 @@ DialogState _showLoadingDialog(BuildContext context, String message) {
     update: (newMessage) {
       setState(() {
         currentMessage = newMessage;
+        isError = false;
+      });
+    },
+    showError: (errorMessage) {
+      setState(() {
+        currentMessage = errorMessage;
+        isError = true;
       });
     },
     close: () {
