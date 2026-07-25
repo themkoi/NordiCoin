@@ -1,4 +1,4 @@
 #!/bin/bash
 
-adb uninstall com.szybet.nordicoin
+adb uninstall --user 0 com.szybet.nordicoin
 killall -9 adb

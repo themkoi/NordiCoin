@@ -119,29 +119,35 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
     super.dispose();
   }
 
-  Widget buildBluetoothOffIcon(BuildContext context) {
-    return const Icon(
-      Icons.bluetooth_disabled,
-      size: 200.0,
-      color: Colors.white54,
-    );
+  Widget _buildStatusIcon(BuildContext context) {
+    if (_adapterState != BluetoothAdapterState.on) {
+      return const Icon(
+        Icons.bluetooth_disabled,
+        size: 200.0,
+        color: Colors.white54,
+      );
+    }
+    if (!_allGranted) {
+      return const Icon(Icons.lock, size: 200.0, color: Colors.white70);
+    }
+    return const Icon(Icons.check_circle, size: 200.0, color: Colors.white);
   }
 
-  Widget buildTitle(BuildContext context) {
-    String state = _adapterState.toString().split(".").last;
-    return Text(
-      'Bluetooth Adapter is $state',
-      style: Theme.of(
-        context,
-      ).primaryTextTheme.titleSmall?.copyWith(color: Colors.white),
-    );
+  String _buildStatusText() {
+    if (_adapterState != BluetoothAdapterState.on) {
+      return 'Bluetooth is off';
+    }
+    if (!_allGranted) {
+      return 'Permissions required';
+    }
+    return 'All permissions granted';
   }
 
   Widget buildTurnOnButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: ElevatedButton(
-        child: const Text('TURN ON'),
+        child: const Text('Enable Bluetooth'),
         onPressed: () async {
           try {
             // This is here because FlutterBluePlus.turnOn also request it, but the GUI later is broken otherwise
@@ -189,7 +195,7 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,
             ),
-            child: Text(title),
+            child: Text("Grant permission"),
           ),
         ],
       ),
@@ -207,8 +213,16 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                buildBluetoothOffIcon(context),
-                buildTitle(context),
+                _buildStatusIcon(context),
+                const SizedBox(height: 16),
+                Text(
+                  _buildStatusText(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 if (_adapterState != BluetoothAdapterState.on)
                   buildTurnOnButton(context),
                 if (_adapterState == BluetoothAdapterState.on) ...[
@@ -219,41 +233,27 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
                       children: [
                         if (!_bluetoothScanGranted)
                           buildPermissionButton(
-                            title: 'Bluetooth Scan',
+                            title: 'Bluetooth Scanning',
                             message:
-                                'This permission is required to discover nearby Bluetooth devices.',
+                                'Required to find, connect and track the NordCoin device via Bluetooth.',
                             onPressed: _requestBluetoothScan,
                           ),
                         if (!_fineLocationGranted)
                           buildPermissionButton(
-                            title: 'Fine Location',
+                            title: 'Location Access',
                             message:
-                                'This permission is required because Bluetooth scanning uses location data.',
+                                'Android requires location permission to scan (so track NordiCoin devices) for Bluetooth devices. Your location is not stored or shared.',
                             onPressed: _requestFineLocation,
                           ),
-                        if (!_bgLocationGranted)
+                        // First _fineLocationGranted, then bg location request, to be sure
+                        if (!_bgLocationGranted && _fineLocationGranted)
                           buildPermissionButton(
-                            title: 'Allow All the Time',
+                            title: 'Background Location',
                             message:
-                                'This permission allows the app to track your location in the background for continuous device discovery.',
+                                'Required to track devices also in the background while the screen is off.',
                             onPressed: _requestBackgroundLocation,
                           ),
                         if (_allGranted) ...[
-                          const SizedBox(height: 10),
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.white,
-                            size: 60,
-                          ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'All permissions granted!',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                           const SizedBox(height: 20),
                           ElevatedButton(
                             onPressed: () {
