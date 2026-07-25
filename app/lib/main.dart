@@ -9,6 +9,7 @@ import 'data.dart';
 import 'pages/ble_permission.dart';
 import 'pages/scan.dart';
 import 'pages/settings.dart';
+import 'pages/status_devices.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,7 +114,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [const StatusPage(), const SettingsPage()];
+  final List<Widget> _pages = [const StatusDevicesPage(), const SettingsPage()];
 
   @override
   Widget build(BuildContext context) {
@@ -164,11 +165,4 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class StatusPage extends StatelessWidget {
-  const StatusPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Status', style: TextStyle(fontSize: 24)));
-  }
-}

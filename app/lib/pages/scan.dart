@@ -260,9 +260,6 @@ class _ScanResultTileState extends State<ScanResultTile> {
   }
 
   Widget _buildTitle(BuildContext context) {
-    // Prefer advName from advertisement data as it reflects the current
-    // advertisement, not the cached platformName which may be stale after
-    // the device changed its advertising name post-connection
     final displayName = widget.result.advertisementData.advName;
     if (displayName.isNotEmpty) {
       return Column(

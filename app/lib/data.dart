@@ -92,7 +92,7 @@ class Device extends HiveObject {
   Device({
     this.aliasName = '',
     this.macAddress = '',
-    this.batteryVoltage = 3.3,
+    this.batteryVoltage = 0.0,
     required this.lastSeenTime,
     this.lastSeenRssi = 0,
     this.id = '',
