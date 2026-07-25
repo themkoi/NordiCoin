@@ -172,5 +172,3 @@ class StatusPage extends StatelessWidget {
     return const Center(child: Text('Status', style: TextStyle(fontSize: 24)));
   }
 }
-
-

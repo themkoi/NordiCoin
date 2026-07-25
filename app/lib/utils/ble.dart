@@ -2,8 +2,100 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import '../consts.dart';
+import '../data.dart';
 
 typedef DeviceOperation = Future<void> Function(BluetoothDevice device);
+
+const List<int> txPowerValues = [
+  -40,
+  -20,
+  -16,
+  -12,
+  -8,
+  -4,
+  0,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  10,
+  12,
+  14,
+  16,
+  18,
+  20,
+];
+
+String txPowerToString(int value) {
+  if (value > 0) {
+    return '+$value dBm';
+  } else if (value == 0) {
+    return '0 dBm';
+  } else {
+    return '$value dBm';
+  }
+}
+
+int txPowerFromString(String str) {
+  final cleaned = str.replaceAll('dBm', '').trim();
+  return int.tryParse(cleaned) ?? 0;
+}
+
+({bool isOn, String reason}) areAlertsOn() {
+  final box = Hive.box(hiveBoxSettings);
+  final settings = box.get(0) as Settings;
+
+  if (settings.alertsManualOverride && settings.alertsManualOverrideAlert) {
+    return (isOn: true, reason: 'Manual override forced');
+  }
+
+  if (settings.alertsManualOverride && !settings.alertsManualOverrideAlert) {
+    return (isOn: false, reason: 'Manual override disabled');
+  }
+
+  final now = DateTime.now();
+  final currentMinutes = now.hour * 60 + now.minute;
+
+  final onTimeMinutes =
+      settings.alertsOnAfterTimeH * 60 + settings.alertsOnAfterTimeM;
+  final offTimeMinutes =
+      settings.alertsOffAfterTimeH * 60 + settings.alertsOffAfterTimeM;
+
+  // Normal and overnight
+  if (onTimeMinutes <= offTimeMinutes) {
+    final isOn =
+        currentMinutes >= onTimeMinutes && currentMinutes < offTimeMinutes;
+    final onStr =
+        '${settings.alertsOnAfterTimeH.toString().padLeft(2, '0')}:${settings.alertsOnAfterTimeM.toString().padLeft(2, '0')}';
+    final offStr =
+        '${settings.alertsOffAfterTimeH.toString().padLeft(2, '0')}:${settings.alertsOffAfterTimeM.toString().padLeft(2, '0')}';
+    return (
+      isOn: isOn,
+      reason: isOn
+          ? 'Within alert window ($onStr - $offStr)'
+          : 'Outside alert window ($onStr - $offStr)',
+    );
+  } else {
+    final isOn =
+        currentMinutes >= offTimeMinutes || currentMinutes < onTimeMinutes;
+    final onStr =
+        '${settings.alertsOnAfterTimeH.toString().padLeft(2, '0')}:${settings.alertsOnAfterTimeM.toString().padLeft(2, '0')}';
+    final offStr =
+        '${settings.alertsOffAfterTimeH.toString().padLeft(2, '0')}:${settings.alertsOffAfterTimeM.toString().padLeft(2, '0')}';
+    return (
+      isOn: isOn,
+      reason: isOn
+          ? 'Within alert window ($offStr - $onStr)'
+          : 'Outside alert window ($offStr - $onStr)',
+    );
+  }
+}
 
 Future<bool> connectAndOperate({
   required String macAddress,

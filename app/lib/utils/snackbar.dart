@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-enum SnackbarLocation {
-  primary,
-  secondary,
-  tertiary,
-}
+enum SnackbarLocation { primary, secondary, tertiary }
 
 class Snackbar {
   static final snackBarKeyPrimary = GlobalKey<ScaffoldMessengerState>();
   static final snackBarKeySecondary = GlobalKey<ScaffoldMessengerState>();
   static final snackBarKeyTertiary = GlobalKey<ScaffoldMessengerState>();
 
-  static GlobalKey<ScaffoldMessengerState> getSnackbar(SnackbarLocation location) {
+  static GlobalKey<ScaffoldMessengerState> getSnackbar(
+    SnackbarLocation location,
+  ) {
     switch (location) {
       case SnackbarLocation.primary:
         return snackBarKeyPrimary;
@@ -24,7 +22,11 @@ class Snackbar {
     }
   }
 
-  static void show(SnackbarLocation location, String msg, {required bool success}) {
+  static void show(
+    SnackbarLocation location,
+    String msg, {
+    required bool success,
+  }) {
     final snackBar = success
         ? SnackBar(content: Text(msg), backgroundColor: Colors.blue)
         : SnackBar(content: Text(msg), backgroundColor: Colors.red);

@@ -16,8 +16,8 @@ pub struct FlashData {
     pub tx_power: i8,
 }
 
-/// Convert an i8 tx_power value to a trouble_host TxPower enum.
-/// Returns the default (ZerodBm) if the value doesn't match any valid level.
+// Convert an i8 tx_power value to a trouble_host TxPower enum.
+// Returns the default (ZerodBm) if the value doesn't match any valid level.
 pub fn tx_power_from_i8(value: i8) -> trouble_host::advertise::TxPower {
     match value {
         -40 => trouble_host::advertise::TxPower::Minus40dBm,
@@ -53,7 +53,7 @@ impl Default for FlashData {
     }
 }
 
-/// Flash buffer size: data + CRC32, rounded up to 4-byte alignment for NVMC writes.
+// Flash buffer size: data + CRC32, rounded up to 4-byte alignment for NVMC writes.
 const FLASH_BUF_SIZE: usize = (FlashData::POSTCARD_MAX_SIZE + 4 + 3) & !3;
 
 extern "C" {

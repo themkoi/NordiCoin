@@ -107,25 +107,29 @@ class Settings extends HiveObject {
   late bool alertsManualOverride;
 
   @HiveField(1)
-  late int alertsOffAfterTimeH;
+  late bool alertsManualOverrideAlert;
 
   @HiveField(2)
-  late int alertsOffAfterTimeM;
+  late int alertsOffAfterTimeH;
 
   @HiveField(3)
-  late int alertsOnAfterTimeH;
+  late int alertsOffAfterTimeM;
 
   @HiveField(4)
-  late int alertsOnAfterTimeM;
+  late int alertsOnAfterTimeH;
 
   @HiveField(5)
-  late int scanFrequencyTimeM;
+  late int alertsOnAfterTimeM;
 
   @HiveField(6)
+  late int scanFrequencyTimeM;
+
+  @HiveField(7)
   late OnAppDevice defaultDeviceSettings;
 
   Settings({
-    this.alertsManualOverride = false,
+    this.alertsManualOverride = true,
+    this.alertsManualOverrideAlert = true,
     this.alertsOffAfterTimeH = 0,
     this.alertsOffAfterTimeM = 0,
     this.alertsOnAfterTimeH = 0,

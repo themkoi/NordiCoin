@@ -1,11 +1,10 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
 import '../data.dart';
+import '../utils/ble.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -16,7 +15,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late Settings _settings;
-  bool _hasChanges = false;
 
   @override
   void initState() {
@@ -27,21 +25,10 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     final box = Hive.box(hiveBoxSettings);
     _settings = box.get(0) as Settings;
-    setState(() {
-      _hasChanges = false;
-    });
   }
 
-  Future<void> _saveSettings() async {
-    await _settings.save();
-    setState(() {
-      _hasChanges = false;
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings saved')),
-      );
-    }
+  void _autoSave() {
+    _settings.save();
   }
 
   void _resetToDefaults() async {
@@ -73,12 +60,8 @@ class _SettingsPageState extends State<SettingsPage> {
       final box = Hive.box(hiveBoxSettings);
       setState(() {
         _settings = Settings(defaultDeviceSettings: OnAppDevice());
-        _hasChanges = true;
       });
       await box.put(0, _settings);
-      setState(() {
-        _hasChanges = false;
-      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Settings reset to defaults')),
@@ -97,9 +80,9 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             ...children,
@@ -119,9 +102,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Expanded(
-            child: Text(label),
-          ),
+          Expanded(child: Text(label)),
           SizedBox(
             width: 80,
             child: TextField(
@@ -155,6 +136,76 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _selectTime({
+    required BuildContext context,
+    required int initialHour,
+    required int initialMinute,
+    required void Function(int hour, int minute) onTimeSelected,
+  }) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: initialHour, minute: initialMinute),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      onTimeSelected(picked.hour, picked.minute);
+    }
+  }
+
+  Widget _buildTimeField({
+    required String label,
+    required int hour,
+    required int minute,
+    required void Function(int hour, int minute) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          InkWell(
+            onTap: () => _selectTime(
+              context: context,
+              initialHour: hour,
+              initialMinute: minute,
+              onTimeSelected: onChanged,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.access_time,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEnumField<T>({
     required String label,
     required T value,
@@ -165,13 +216,11 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Expanded(
-            child: Text(label),
-          ),
+          Expanded(child: Text(label)),
           SizedBox(
             width: 140,
             child: DropdownButtonFormField<T>(
-              value: value,
+              initialValue: value,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -188,10 +237,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               items: options.entries.map((e) {
-                return DropdownMenuItem<T>(
-                  value: e.key,
-                  child: Text(e.value),
-                );
+                return DropdownMenuItem<T>(value: e.key, child: Text(e.value));
               }).toList(),
               onChanged: (v) {
                 if (v != null) {
@@ -227,271 +273,310 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Widget _buildTxPowerField({
+    required String label,
+    required int value,
+    required void Function(int) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          SizedBox(
+            width: 140,
+            child: DropdownButtonFormField<int>(
+              initialValue: value,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+              items: txPowerValues.map((v) {
+                return DropdownMenuItem<int>(
+                  value: v,
+                  child: Text(txPowerToString(v)),
+                );
+              }).toList(),
+              onChanged: (v) {
+                if (v != null) {
+                  onChanged(v);
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: ListView(
         children: [
-          _buildSection(
-            'Alert Schedule',
-            [
+          _buildSection('Alert Schedule', [
+            FutureBuilder<({bool isOn, String reason})>(
+              future: Future.value(areAlertsOn()),
+              builder: (context, snapshot) {
+                final status = snapshot.data;
+                if (status == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        status.isOn ? Icons.check_circle : Icons.cancel,
+                        color: status.isOn ? Colors.green : Colors.red,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Alerts ${status.isOn ? "ON" : "OFF"} — ${status.reason}',
+                          style: TextStyle(
+                            color: status.isOn ? Colors.green : Colors.red,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            _buildSwitchField(
+              label: 'Manual Override',
+              value: _settings.alertsManualOverride,
+              onChanged: (v) {
+                setState(() {
+                  _settings.alertsManualOverride = v;
+                  _autoSave();
+                });
+              },
+            ),
+            if (_settings.alertsManualOverride)
               _buildSwitchField(
-                label: 'Manual Override',
-                value: _settings.alertsManualOverride,
+                label: 'Override Alert',
+                value: _settings.alertsManualOverrideAlert,
                 onChanged: (v) {
                   setState(() {
-                    _settings.alertsManualOverride = v;
-                    _hasChanges = true;
+                    _settings.alertsManualOverrideAlert = v;
+                    _autoSave();
                   });
                 },
               ),
-              const Divider(),
-              Text(
-                'Alerts OFF from',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              _buildIntField(
-                label: '  Hour',
-                value: _settings.alertsOffAfterTimeH,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.alertsOffAfterTimeH = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'h',
-              ),
-              _buildIntField(
-                label: '  Minute',
-                value: _settings.alertsOffAfterTimeM,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.alertsOffAfterTimeM = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'm',
-              ),
-              const Divider(),
-              Text(
-                'Alerts ON from',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              _buildIntField(
-                label: '  Hour',
-                value: _settings.alertsOnAfterTimeH,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.alertsOnAfterTimeH = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'h',
-              ),
-              _buildIntField(
-                label: '  Minute',
-                value: _settings.alertsOnAfterTimeM,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.alertsOnAfterTimeM = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'm',
-              ),
-            ],
-          ),
-          _buildSection(
-            'Scan Settings',
-            [
-              _buildIntField(
-                label: 'Scan Frequency',
-                value: _settings.scanFrequencyTimeM,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.scanFrequencyTimeM = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'min',
-              ),
-            ],
-          ),
-          _buildSection(
-            'Default Device Settings',
-            [
-              _buildIntField(
-                label: 'Loud Buzzing Duration',
-                value: _settings.defaultDeviceSettings.loudBuzzingTimeS,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.loudBuzzingTimeS = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 's',
-              ),
-              _buildIntField(
-                label: 'Silent Buzzing Duration',
-                value: _settings.defaultDeviceSettings.silentBuzzingTimeS,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.silentBuzzingTimeS = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 's',
-              ),
-              _buildIntField(
-                label: 'TX Power',
-                value: _settings.defaultDeviceSettings.txPower,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.txPower = v;
-                    _hasChanges = true;
-                  });
-                },
-              ),
-              _buildIntField(
-                label: 'Turning Off Alert Time',
-                value: _settings.defaultDeviceSettings.turningOffAlertTimeM,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.turningOffAlertTimeM = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'min',
-              ),
-              const Divider(),
-              Text(
-                'Alert Actions',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              _buildEnumField<ActionType>(
-                label: '  Low Alert',
-                value: _settings.defaultDeviceSettings.lowAlertAction,
-                options: const {
-                  ActionType.none: 'None',
-                  ActionType.notification: 'Notification',
-                  ActionType.buzzing: 'Buzzing',
-                  ActionType.loudAlarm: 'Loud Alarm',
-                },
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.lowAlertAction = v;
-                    _hasChanges = true;
-                  });
-                },
-              ),
-              _buildEnumField<ActionType>(
-                label: '  Medium Alert',
-                value: _settings.defaultDeviceSettings.mediumAlertAction,
-                options: const {
-                  ActionType.none: 'None',
-                  ActionType.notification: 'Notification',
-                  ActionType.buzzing: 'Buzzing',
-                  ActionType.loudAlarm: 'Loud Alarm',
-                },
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.mediumAlertAction = v;
-                    _hasChanges = true;
-                  });
-                },
-              ),
-              _buildEnumField<ActionType>(
-                label: '  High Alert',
-                value: _settings.defaultDeviceSettings.highAlertAction,
-                options: const {
-                  ActionType.none: 'None',
-                  ActionType.notification: 'Notification',
-                  ActionType.buzzing: 'Buzzing',
-                  ActionType.loudAlarm: 'Loud Alarm',
-                },
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.highAlertAction = v;
-                    _hasChanges = true;
-                  });
-                },
-              ),
-              const Divider(),
-              Text(
-                'Lost Device Alert Times',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              _buildIntField(
-                label: '  Low Alert Time',
-                value: _settings.defaultDeviceSettings.lowAlertLostDeviceTimeM,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.lowAlertLostDeviceTimeM = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'min',
-              ),
-              _buildIntField(
-                label: '  Medium Alert Time',
-                value: _settings.defaultDeviceSettings.mediumAlertLostDeviceTimeM,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.mediumAlertLostDeviceTimeM = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'min',
-              ),
-              _buildIntField(
-                label: '  High Alert Time',
-                value: _settings.defaultDeviceSettings.highAlertLostDeviceTimeM,
-                onChanged: (v) {
-                  setState(() {
-                    _settings.defaultDeviceSettings.highAlertLostDeviceTimeM = v;
-                    _hasChanges = true;
-                  });
-                },
-                suffix: 'min',
-              ),
-            ],
-          ),
+            const Divider(),
+            Text(
+              'Alerts OFF from',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            _buildTimeField(
+              label: 'Time',
+              hour: _settings.alertsOffAfterTimeH,
+              minute: _settings.alertsOffAfterTimeM,
+              onChanged: (h, m) {
+                setState(() {
+                  _settings.alertsOffAfterTimeH = h;
+                  _settings.alertsOffAfterTimeM = m;
+                  _autoSave();
+                });
+              },
+            ),
+            const Divider(),
+            Text(
+              'Alerts ON from',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            _buildTimeField(
+              label: 'Time',
+              hour: _settings.alertsOnAfterTimeH,
+              minute: _settings.alertsOnAfterTimeM,
+              onChanged: (h, m) {
+                setState(() {
+                  _settings.alertsOnAfterTimeH = h;
+                  _settings.alertsOnAfterTimeM = m;
+                  _autoSave();
+                });
+              },
+            ),
+          ]),
+          _buildSection('Scan Settings', [
+            _buildIntField(
+              label: 'Scan Frequency',
+              value: _settings.scanFrequencyTimeM,
+              onChanged: (v) {
+                setState(() {
+                  _settings.scanFrequencyTimeM = v;
+                  _autoSave();
+                });
+              },
+              suffix: 'min',
+            ),
+          ]),
+          _buildSection('Default Device Settings', [
+            _buildIntField(
+              label: 'Loud Buzzing Duration',
+              value: _settings.defaultDeviceSettings.loudBuzzingTimeS,
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.loudBuzzingTimeS = v;
+                  _autoSave();
+                });
+              },
+              suffix: 's',
+            ),
+            _buildIntField(
+              label: 'Silent Buzzing Duration',
+              value: _settings.defaultDeviceSettings.silentBuzzingTimeS,
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.silentBuzzingTimeS = v;
+                  _autoSave();
+                });
+              },
+              suffix: 's',
+            ),
+            _buildTxPowerField(
+              label: 'TX Power',
+              value: _settings.defaultDeviceSettings.txPower,
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.txPower = v;
+                  _autoSave();
+                });
+              },
+            ),
+            _buildIntField(
+              label: 'Turning Off Alert Time',
+              value: _settings.defaultDeviceSettings.turningOffAlertTimeM,
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.turningOffAlertTimeM = v;
+                  _autoSave();
+                });
+              },
+              suffix: 'min',
+            ),
+            const Divider(),
+            Text('Alert Actions', style: Theme.of(context).textTheme.bodySmall),
+            _buildEnumField<ActionType>(
+              label: 'Low Alert',
+              value: _settings.defaultDeviceSettings.lowAlertAction,
+              options: const {
+                ActionType.none: 'None',
+                ActionType.notification: 'Notification',
+                ActionType.buzzing: 'Buzzing',
+                ActionType.loudAlarm: 'Loud Alarm',
+              },
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.lowAlertAction = v;
+                  _autoSave();
+                });
+              },
+            ),
+            _buildEnumField<ActionType>(
+              label: 'Medium Alert',
+              value: _settings.defaultDeviceSettings.mediumAlertAction,
+              options: const {
+                ActionType.none: 'None',
+                ActionType.notification: 'Notification',
+                ActionType.buzzing: 'Buzzing',
+                ActionType.loudAlarm: 'Loud Alarm',
+              },
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.mediumAlertAction = v;
+                  _autoSave();
+                });
+              },
+            ),
+            _buildEnumField<ActionType>(
+              label: 'High Alert',
+              value: _settings.defaultDeviceSettings.highAlertAction,
+              options: const {
+                ActionType.none: 'None',
+                ActionType.notification: 'Notification',
+                ActionType.buzzing: 'Buzzing',
+                ActionType.loudAlarm: 'Loud Alarm',
+              },
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.highAlertAction = v;
+                  _autoSave();
+                });
+              },
+            ),
+            const Divider(),
+            Text(
+              'Lost Device Alert Times',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            _buildIntField(
+              label: 'Low Alert Time',
+              value: _settings.defaultDeviceSettings.lowAlertLostDeviceTimeM,
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.lowAlertLostDeviceTimeM = v;
+                  _autoSave();
+                });
+              },
+              suffix: 'min',
+            ),
+            _buildIntField(
+              label: 'Medium Alert Time',
+              value: _settings.defaultDeviceSettings.mediumAlertLostDeviceTimeM,
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.mediumAlertLostDeviceTimeM =
+                      v;
+                  _autoSave();
+                });
+              },
+              suffix: 'min',
+            ),
+            _buildIntField(
+              label: 'High Alert Time',
+              value: _settings.defaultDeviceSettings.highAlertLostDeviceTimeM,
+              onChanged: (v) {
+                setState(() {
+                  _settings.defaultDeviceSettings.highAlertLostDeviceTimeM = v;
+                  _autoSave();
+                });
+              },
+              suffix: 'min',
+            ),
+          ]),
           const SizedBox(height: 16),
-          // Save and Reset buttons
+          // Reset button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _hasChanges ? _saveSettings : null,
-                    icon: const Icon(Icons.save),
-                    label: const Text('Save'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _hasChanges
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
+            child: Center(
+              child: OutlinedButton.icon(
+                onPressed: _resetToDefaults,
+                icon: const Icon(Icons.restore),
+                label: const Text('Reset to Defaults'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                  side: BorderSide(color: Theme.of(context).colorScheme.error),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _resetToDefaults,
-                    icon: const Icon(Icons.restore),
-                    label: const Text('Reset to Defaults'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Theme.of(context).colorScheme.error,
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 32),
