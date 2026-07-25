@@ -20,7 +20,7 @@ Future<bool> connectAndOperate({
 
   var hasError = false;
   try {
-    await device.connect();
+    await device.connect(license: License.nonprofit);
 
     if (dialogState != null) {
       _updateLoadingDialog(dialogState, "Discovering services...");

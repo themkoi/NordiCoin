@@ -8,6 +8,7 @@ import 'consts.dart';
 import 'data.dart';
 import 'pages/ble_permission.dart';
 import 'pages/scan.dart';
+import 'pages/settings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -172,13 +173,4 @@ class StatusPage extends StatelessWidget {
   }
 }
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Settings (Coming Soon)', style: TextStyle(fontSize: 24)),
-    );
-  }
-}
