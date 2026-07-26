@@ -771,6 +771,7 @@ class AdvertisementData {
   final Map<int, List<int>> manufacturerData; // key: manufacturerId
   final Map<Guid, List<int>> serviceData; // key: service guid
   final List<Guid> serviceUuids;
+  final List<int>? rawAdvBytes; // raw advertising bytes
 
   /// for convenience, raw msd data
   ///   * interprets the first two byte as raw data,
@@ -793,6 +794,7 @@ class AdvertisementData {
     required this.manufacturerData,
     required this.serviceData,
     required this.serviceUuids,
+    this.rawAdvBytes,
   });
 
   AdvertisementData.fromProto(BmScanAdvertisement p)
@@ -802,7 +804,8 @@ class AdvertisementData {
         connectable = p.connectable,
         manufacturerData = p.manufacturerData,
         serviceData = p.serviceData,
-        serviceUuids = p.serviceUuids;
+        serviceUuids = p.serviceUuids,
+        rawAdvBytes = p.rawAdvBytes;
 
   @override
   String toString() {

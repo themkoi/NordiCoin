@@ -2682,6 +2682,7 @@ public class FlutterBluePlusPlugin implements
         String                  advName      = adv != null ?  adv.getDeviceName()                : null;
         int                     txPower      = adv != null ?  adv.getTxPowerLevel()              : min;
         int                     appearance   = adv != null ?  getAppearanceFromScanRecord(adv)   : 0;
+        byte[]                  rawAdv       = adv != null ?  adv.getBytes()                     : null;
         byte[]                  rawMsd       = adv != null ?  getManufacturerSpecificData(adv)   : null;
         List<ParcelUuid>        serviceUuids = adv != null ?  adv.getServiceUuids()              : null;
         Map<ParcelUuid, byte[]> serviceData  = adv != null ?  adv.getServiceData()               : null;
@@ -2730,9 +2731,31 @@ public class FlutterBluePlusPlugin implements
         if (appearance != 0)             {map.put("appearance", appearance);}
         if (manufDataB.size() != 0)      {map.put("manufacturer_data", manufDataB);}
         if (serviceData != null)         {map.put("service_data", serviceDataB);}
+        if (rawAdv != null)              {map.put("raw_adv_bytes", rawAdv);}
         if (serviceUuids != null)        {map.put("service_uuids", serviceUuidsB);}
-        if (result.getRssi() != 0)       {map.put("rssi", result.getRssi());};
+        if (result.getRssi() != 0)       {map.put("rssi", result.getRssi());}
         return map;
+    }
+
+    // Parse raw advertising bytes to extract battery byte (type 0x21)
+    static int getBatteryFromRawAdvBytes(byte[] rawBytes) {
+        if (rawBytes == null || rawBytes.length == 0) {
+            return -1;
+        }
+        int n = 0;
+        while (n < rawBytes.length) {
+            int fieldLen = rawBytes[n] & 0xFF;
+            if (fieldLen <= 0 || n + fieldLen >= rawBytes.length) {
+                break;
+            }
+            int dataType = rawBytes[n + 1] & 0xFF;
+            // Type 0x21 = custom battery data
+            if (dataType == 0x21 && fieldLen >= 2) {
+                return rawBytes[n + 2] & 0xFF;
+            }
+            n += fieldLen + 1;
+        }
+        return -1;
     }
 
     // See: BmBluetoothDevice

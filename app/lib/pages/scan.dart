@@ -68,6 +68,9 @@ class _ScanScreenState extends State<ScanScreen> {
       await FlutterBluePlus.startScan(
         timeout: const Duration(seconds: 15),
         androidUsesFineLocation: true,
+        androidScanMode: AndroidScanMode.lowLatency,
+        continuousUpdates: true,
+        continuousDivisor: 1,
       );
     } catch (e) {
       Snackbar.show(
@@ -149,19 +152,6 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  Future onRefresh() {
-    if (_isScanning == false) {
-      FlutterBluePlus.startScan(
-        timeout: const Duration(seconds: 15),
-        androidUsesFineLocation: true,
-      );
-    }
-    if (mounted) {
-      setState(() {});
-    }
-    return Future.delayed(Duration(milliseconds: 500));
-  }
-
   Widget buildScanButton() {
     final button = _isScanning
         ? ElevatedButton(
@@ -217,10 +207,7 @@ class _ScanScreenState extends State<ScanScreen> {
           title: const Text('Find Devices'),
           actions: [buildScanButton(), const SizedBox(width: 15)],
         ),
-        body: RefreshIndicator(
-          onRefresh: onRefresh,
-          child: ListView(children: <Widget>[..._buildScanResultTiles()]),
-        ),
+        body: ListView(children: <Widget>[..._buildScanResultTiles()]),
       ),
     );
   }
@@ -300,8 +287,9 @@ class _ScanResultTileState extends State<ScanResultTile> {
           ? ElevatedButton(
               onPressed: null,
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
                 foregroundColor: Colors.grey,
               ),
               child: const Text('Already bonded'),

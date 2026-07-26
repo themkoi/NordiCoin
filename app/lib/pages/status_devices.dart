@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
 import '../data.dart';
+import '../utils/scan.dart';
 
 // (1.8V = 0%, 3.3V = 100%)
 double batteryPercentageFromVoltage(double voltage) {
@@ -168,20 +169,19 @@ class _StatusDevicesPageState extends State<StatusDevicesPage> {
                 _buildDetailRow(
                   icon: Icons.battery_std,
                   label: 'Battery voltage',
-                  value:
-                      '${device.batteryVoltage.toStringAsFixed(2)} V  (${percentage.round()}%)',
-                ),
-                const SizedBox(height: 4),
-                _buildDetailRow(
-                  icon: Icons.network_wifi,
-                  label: 'MAC address',
-                  value: device.macAddress,
+                  value: '${device.batteryVoltage.toStringAsFixed(2)} V',
                 ),
                 const SizedBox(height: 4),
                 _buildDetailRow(
                   icon: Icons.signal_cellular_alt,
                   label: 'Latest RSSI',
                   value: '${device.lastSeenRssi} dBm',
+                ),
+                const SizedBox(height: 4),
+                _buildDetailRow(
+                  icon: Icons.network_wifi,
+                  label: 'MAC address',
+                  value: device.macAddress,
                 ),
               ],
             ),
@@ -243,10 +243,17 @@ class _StatusDevicesPageState extends State<StatusDevicesPage> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 2),
-      itemCount: _devices.length,
-      itemBuilder: (context, index) => _buildDeviceTile(_devices[index], index),
+    return RefreshIndicator(
+      onRefresh: () async {
+        await startScan();
+        await _loadDevices();
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.only(top: 2),
+        itemCount: _devices.length,
+        itemBuilder: (context, index) =>
+            _buildDeviceTile(_devices[index], index),
+      ),
     );
   }
 }
