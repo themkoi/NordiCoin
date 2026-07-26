@@ -278,16 +278,38 @@ class _ScanResultTileState extends State<ScanResultTile> {
     }
   }
 
-  // When list of devices will be done, then check here for it, if so, show "Already bonded"
+  bool _isAlreadyBonded() {
+    final box = Hive.box(hiveBoxDevices);
+    final scannedMac = widget.result.device.remoteId.str;
+    for (final key in box.keys) {
+      final device = box.get(key) as Device;
+      if (device.macAddress.toLowerCase() == scannedMac.toLowerCase()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final alreadyBonded = _isAlreadyBonded();
     return ListTile(
       title: _buildTitle(context),
       leading: Text(widget.result.rssi.toString()),
-      trailing: ElevatedButton(
-        onPressed: widget.onTap,
-        child: const Text('Connect'),
-      ),
+      trailing: alreadyBonded
+          ? ElevatedButton(
+              onPressed: null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                foregroundColor: Colors.grey,
+              ),
+              child: const Text('Already bonded'),
+            )
+          : ElevatedButton(
+              onPressed: widget.onTap,
+              child: const Text('Connect'),
+            ),
     );
   }
 }
