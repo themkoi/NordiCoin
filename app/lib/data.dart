@@ -50,8 +50,8 @@ class OnAppDevice extends HiveObject {
   late ActionType highAlertAction;
 
   OnAppDevice({
-    this.loudBuzzingTimeS = 0,
-    this.silentBuzzingTimeS = 0,
+    this.loudBuzzingTimeS = 30,
+    this.silentBuzzingTimeS = 40,
     this.txPower = 0,
     this.turningOffAlertTimeM = 15,
     this.lowAlertLostDeviceTimeM = 5,

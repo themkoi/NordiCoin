@@ -50,15 +50,62 @@ class _DevicePageState extends State<DevicePage> {
   }
 
   void _loudFind() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Loud find triggered (placeholder)')),
-    );
+    final duration = _settings.loudBuzzingTimeS;
+    connectAndOperate(
+      macAddress: _device.macAddress,
+      operation: (device) async {
+        final services = await device.discoverServices();
+        final loudService = services.firstWhere(
+          (s) => s.serviceUuid == nordCoinServiceUuid,
+          orElse: () => throw Exception('NordCoin service not found'),
+        );
+        final loudCharHandle = loudService.characteristics.firstWhere(
+          (c) => c.characteristicUuid == findMeLoudCharUuid,
+          orElse: () => throw Exception('Loud find characteristic not found'),
+        );
+        final silentCharHandle = loudService.characteristics.firstWhere(
+          (c) => c.characteristicUuid == findMeQuietCharUuid,
+          orElse: () => throw Exception('Quiet find characteristic not found'),
+        );
+        await loudCharHandle.write([duration]);
+        await silentCharHandle.write([duration]);
+      },
+      context: context,
+      operationMessage: 'Triggering loud find...',
+    ).then((success) {
+      if (mounted && success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Loud find triggered for ${_settings.loudBuzzingTimeS}s')),
+        );
+      }
+    });
   }
 
   void _quietFind() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Quiet find triggered (placeholder)')),
-    );
+    final duration = _settings.silentBuzzingTimeS;
+    connectAndOperate(
+      macAddress: _device.macAddress,
+      operation: (device) async {
+        final services = await device.discoverServices();
+        final loudService = services.firstWhere(
+          (s) => s.serviceUuid == nordCoinServiceUuid,
+          orElse: () => throw Exception('NordCoin service not found'),
+        );
+        final silentCharHandle = loudService.characteristics.firstWhere(
+          (c) => c.characteristicUuid == findMeQuietCharUuid,
+          orElse: () => throw Exception('Quiet find characteristic not found'),
+        );
+        await silentCharHandle.write([duration]);
+      },
+      context: context,
+      operationMessage: 'Triggering quiet find...',
+    ).then((success) {
+      if (mounted && success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Quiet find triggered for ${_settings.silentBuzzingTimeS}s')),
+        );
+      }
+    });
   }
 
   void _applyTxPower() {
