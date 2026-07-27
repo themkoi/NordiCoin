@@ -113,8 +113,12 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
+  final _statusKey = GlobalKey<StatusDevicesPageState>();
 
-  final List<Widget> _pages = [const StatusDevicesPage(), const SettingsPage()];
+  List<Widget> get _pages => [
+    StatusDevicesPage(key: _statusKey),
+    const SettingsPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -154,9 +158,11 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (context) => const ScanScreen()));
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ScanScreen(statusKey: _statusKey),
+            ),
+          );
         },
         tooltip: 'Scan Devices',
         child: const Icon(Icons.add),

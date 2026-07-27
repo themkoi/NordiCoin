@@ -107,10 +107,12 @@ pub async fn ble_task(
                         };
 
                         // Set the uptime value
+                        let uptime = (Instant::now().as_secs() / 60) as u32;
+                        info!("Uptime is: {}", uptime);
                         server
                             .set(
                                 &server.service.uptime,
-                                &((Instant::now().as_secs() / 60) as u32),
+                                &(uptime),
                             )
                             .log();
 

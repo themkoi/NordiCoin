@@ -3,38 +3,29 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
 import '../data.dart';
+import '../utils/battery.dart';
+import '../utils/other.dart';
 import '../utils/scan.dart';
-
-// (1.8V = 0%, 3.3V = 100%)
-double batteryPercentageFromVoltage(double voltage) {
-  final clamped = voltage.clamp(1.8, 3.3);
-  return ((clamped - 1.8) / 1.5 * 100).roundToDouble();
-}
-
-Color batteryColorFromPercentage(double percentage) {
-  if (percentage >= 50) return Colors.green;
-  if (percentage >= 20) return Colors.amber;
-  return Colors.red;
-}
+import 'device.dart';
 
 class StatusDevicesPage extends StatefulWidget {
   const StatusDevicesPage({super.key});
 
   @override
-  State<StatusDevicesPage> createState() => _StatusDevicesPageState();
+  State<StatusDevicesPage> createState() => StatusDevicesPageState();
 }
 
-class _StatusDevicesPageState extends State<StatusDevicesPage> {
+class StatusDevicesPageState extends State<StatusDevicesPage> {
   List<Device> _devices = [];
   int? _highlightedIndex;
 
   @override
   void initState() {
     super.initState();
-    _loadDevices();
+    loadDevices();
   }
 
-  Future<void> _loadDevices() async {
+  Future<void> loadDevices() async {
     final box = Hive.box(hiveBoxDevices);
     final devices = <Device>[];
     for (final key in box.keys) {
@@ -52,21 +43,6 @@ class _StatusDevicesPageState extends State<StatusDevicesPage> {
     }
   }
 
-  String _formatLastSeen(DateTime lastSeen) {
-    final now = DateTime.now();
-    final difference = now.difference(lastSeen);
-
-    if (difference.inSeconds < 60) {
-      return '${difference.inSeconds}s ago';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
-    }
-  }
-
   void _onDeviceTap(int index) {
     setState(() {
       if (_highlightedIndex == index) {
@@ -81,7 +57,7 @@ class _StatusDevicesPageState extends State<StatusDevicesPage> {
     final isHighlighted = _highlightedIndex == index;
     final percentage = batteryPercentageFromVoltage(device.batteryVoltage);
     final batteryColor = batteryColorFromPercentage(percentage);
-    final lastSeenStr = _formatLastSeen(device.lastSeenTime);
+    final lastSeenStr = formatTimeAgo(device.lastSeenTime);
 
     return Column(
       children: [
@@ -132,13 +108,25 @@ class _StatusDevicesPageState extends State<StatusDevicesPage> {
                     ],
                   ),
                 ),
-                // Placeholder, here will be a button
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: isHighlighted
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.grey[600],
+                // Button to navigate to device detail page
+                IconButton(
+                  icon: Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: isHighlighted
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey[600],
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => DevicePage(
+                          device: device,
+                          statusKey: widget.key as GlobalKey<StatusDevicesPageState>,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -246,7 +234,7 @@ class _StatusDevicesPageState extends State<StatusDevicesPage> {
     return RefreshIndicator(
       onRefresh: () async {
         await startScan();
-        await _loadDevices();
+        await loadDevices();
       },
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 2),

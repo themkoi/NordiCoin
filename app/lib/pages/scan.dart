@@ -9,9 +9,12 @@ import '../consts.dart';
 import '../utils/snackbar.dart';
 import '../utils/ble.dart';
 import '../data.dart';
+import 'status_devices.dart';
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key});
+  final GlobalKey<StatusDevicesPageState> statusKey;
+
+  const ScanScreen({super.key, required this.statusKey});
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -98,10 +101,13 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> onConnectPressed(BluetoothDevice device) async {
     final box = Hive.box(hiveBoxDevices);
-    final deviceName = device.platformName;
+    final deviceName = device.platformName ?? '';
     final deviceId = deviceName.contains('-')
         ? deviceName.split('-').skip(1).join('-')
         : deviceName;
+
+    final aliasName = deviceName.isEmpty ? '(No name)' : deviceName;
+    final resolvedDeviceId = deviceId.isEmpty ? '(No id)' : deviceId;
 
     final success = await connectAndOperate(
       macAddress: device.remoteId.str,
@@ -128,16 +134,15 @@ class _ScanScreenState extends State<ScanScreen> {
 
         final uptimeChar = charFor(uptimeCharUuid);
         final uptimeBytes = await uptimeChar.read();
-        final uptimeMinutes = Uint32List.fromList(
-          uptimeBytes,
-        ).buffer.asByteData().getUint32(0);
-
+        final uptimeMinutes = ByteData.sublistView(
+          Uint8List.fromList(uptimeBytes),
+        ).getUint32(0, Endian.little);
         final onAppDevice = OnAppDevice(txPower: defaultSettings.txPower);
 
         final newDevice = Device(
-          aliasName: device.platformName,
+          aliasName: aliasName,
           macAddress: device.remoteId.str,
-          id: deviceId,
+          id: resolvedDeviceId,
           lastSeenTime: DateTime.now(),
           lastSeenUptimeM: uptimeMinutes,
           deviceSettings: onAppDevice,
@@ -148,6 +153,7 @@ class _ScanScreenState extends State<ScanScreen> {
     );
 
     if (success && mounted) {
+      widget.statusKey.currentState?.loadDevices();
       Navigator.of(context).pop();
     }
   }
