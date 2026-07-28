@@ -1,4 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../consts.dart';
+import '../data.dart';
+
+Future<void> initHive() async {
+  await Hive.initFlutter();
+  Hive.registerAdapter(ActionTypeAdapter());
+  Hive.registerAdapter(OnAppDeviceAdapter());
+  Hive.registerAdapter(DeviceAdapter());
+  Hive.registerAdapter(SettingsAdapter());
+  await Hive.openBox(hiveBoxDevices);
+  await Hive.openBox(hiveBoxSettings);
+}
 
 Color dbmColor(int dbm) {
   if (dbm >= -50) return Colors.green;

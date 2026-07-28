@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -10,18 +11,16 @@ import 'pages/ble_permission.dart';
 import 'pages/scan.dart';
 import 'pages/settings.dart';
 import 'pages/status_devices.dart';
+import 'services/background_scan_service.dart';
+import 'utils/other.dart' show initHive;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Hive init
-  await Hive.initFlutter();
-  Hive.registerAdapter(ActionTypeAdapter());
-  Hive.registerAdapter(OnAppDeviceAdapter());
-  Hive.registerAdapter(DeviceAdapter());
-  Hive.registerAdapter(SettingsAdapter());
-  final devicesBox = await Hive.openBox(hiveBoxDevices);
-  final settingsBox = await Hive.openBox(hiveBoxSettings);
+  await initHive();
+  final devicesBox = Hive.box(hiveBoxDevices);
+  final settingsBox = Hive.box(hiveBoxSettings);
 
   if (settingsBox.isEmpty) {
     final defaultSettings = Settings(defaultDeviceSettings: OnAppDevice());
@@ -36,11 +35,59 @@ void main() async {
     '$hiveBoxSettings: ${settingsBox.length} items, keys=${settingsBox.keys.toList()}',
   );
 
+  // After hive
+  await initializeBackgroundScanService();
+
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Stop background scan immediately when app is active
+    _stopBackgroundScan();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App came to foreground - stop background scan
+        _stopBackgroundScan();
+        break;
+      case AppLifecycleState.paused:
+        // App went to background - resume background scan
+        _resumeBackgroundScan();
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _stopBackgroundScan() {
+    final service = FlutterBackgroundService();
+    service.invoke('stopScan');
+  }
+
+  void _resumeBackgroundScan() {
+    final service = FlutterBackgroundService();
+    service.startService();
+  }
 
   @override
   Widget build(BuildContext context) {
