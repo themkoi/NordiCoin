@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -44,9 +46,37 @@ class _DevicePageState extends State<DevicePage> {
   }
 
   void _refreshUptime() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Refresh uptime (placeholder)')),
-    );
+    connectAndOperate(
+      macAddress: _device.macAddress,
+      operation: (device) async {
+        final services = await device.discoverServices();
+        final nordCoinService = services.firstWhere(
+          (s) => s.serviceUuid == nordCoinServiceUuid,
+          orElse: () => throw Exception('NordCoin service not found'),
+        );
+        final uptimeChar = nordCoinService.characteristics.firstWhere(
+          (c) => c.characteristicUuid == uptimeCharUuid,
+          orElse: () => throw Exception('Uptime characteristic not found'),
+        );
+        final uptimeBytes = await uptimeChar.read();
+        final uptimeMinutes = ByteData.sublistView(
+          Uint8List.fromList(uptimeBytes),
+        ).getUint32(0, Endian.little);
+        setState(() {
+          _device.lastSeenUptimeM = uptimeMinutes;
+        });
+        _device.save();
+        widget.statusKey.currentState?.loadDevices();
+      },
+      context: context,
+      operationMessage: 'Reading uptime...',
+    ).then((success) {
+      if (mounted && success) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Uptime refreshed')));
+      }
+    });
   }
 
   void _loudFind() {
@@ -75,7 +105,11 @@ class _DevicePageState extends State<DevicePage> {
     ).then((success) {
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Loud find triggered for ${_settings.loudBuzzingTimeS}s')),
+          SnackBar(
+            content: Text(
+              'Loud find triggered for ${_settings.loudBuzzingTimeS}s',
+            ),
+          ),
         );
       }
     });
@@ -102,16 +136,42 @@ class _DevicePageState extends State<DevicePage> {
     ).then((success) {
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Quiet find triggered for ${_settings.silentBuzzingTimeS}s')),
+          SnackBar(
+            content: Text(
+              'Quiet find triggered for ${_settings.silentBuzzingTimeS}s',
+            ),
+          ),
         );
       }
     });
   }
 
   void _applyTxPower() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('TX Power applied (placeholder)')),
-    );
+    connectAndOperate(
+      macAddress: _device.macAddress,
+      operation: (device) async {
+        final services = await device.discoverServices();
+        final nordCoinService = services.firstWhere(
+          (s) => s.serviceUuid == nordCoinServiceUuid,
+          orElse: () => throw Exception('NordCoin service not found'),
+        );
+        final txPowerChar = nordCoinService.characteristics.firstWhere(
+          (c) => c.characteristicUuid == txPowerCharUuid,
+          orElse: () => throw Exception('TX Power characteristic not found'),
+        );
+        await txPowerChar.write([_settings.txPower]);
+      },
+      context: context,
+      operationMessage: 'Applying TX Power...',
+    ).then((success) {
+      if (mounted && success) {
+        _device.save();
+        widget.statusKey.currentState?.loadDevices();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('TX Power applied')));
+      }
+    });
   }
 
   @override
@@ -371,9 +431,9 @@ class _DevicePageState extends State<DevicePage> {
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: valueColor,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: valueColor),
           ),
         ),
       ],

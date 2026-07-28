@@ -122,7 +122,8 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                       MaterialPageRoute(
                         builder: (context) => DevicePage(
                           device: device,
-                          statusKey: widget.key as GlobalKey<StatusDevicesPageState>,
+                          statusKey:
+                              widget.key as GlobalKey<StatusDevicesPageState>,
                         ),
                       ),
                     );
@@ -202,9 +203,9 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
         Expanded(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: valueColor,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: valueColor),
           ),
         ),
       ],
@@ -240,8 +241,34 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        await startScan();
+        final errors = await startScan();
         await loadDevices();
+
+        if (!mounted) return;
+
+        void showResultDialogs() {
+          if (errors.isNotEmpty) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Refresh finished'),
+                content: Text(errors),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Refreshed successfully')),
+            );
+          }
+        }
+
+        Future.microtask(showResultDialogs);
       },
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 2),

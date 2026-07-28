@@ -28,8 +28,7 @@ double? parseBatteryFromRawAdvBytes(List<int>? rawAdvBytes) {
   return null;
 }
 
-// Returns a Future that completes after the scan & updates are done
-Future<void> startScan() async {
+Future<String> startScan() async {
   print('Starting BLE scan...');
 
   // Collect scan results during the scan for later
@@ -83,25 +82,47 @@ Future<void> startScan() async {
   }
   print('Loaded ${devices.length} devices from Hive');
 
+  final errors = <String>[];
+  final scannedMacs = <String>{};
+
   for (final result in collectedResults) {
     final scannedMac = result.device.remoteId.str.toLowerCase();
+    scannedMacs.add(scannedMac);
+
     for (final device in devices) {
       if (device.macAddress.toLowerCase() == scannedMac) {
         device.lastSeenTime = DateTime.now();
         device.lastSeenRssi = result.rssi;
 
-        final batteryVoltage = parseBatteryFromRawAdvBytes(
-          result.advertisementData.rawAdvBytes,
-        );
-        print('${device.aliasName}: found (RSSI: ${result.rssi} dBm)');
-        if (batteryVoltage != null) {
-          device.batteryVoltage = batteryVoltage;
-          print('Battery: ${batteryVoltage.toStringAsFixed(2)}V');
+        // A bonded device doesn't advertise its name.
+        final deviceName = result.advertisementData.advName;
+        if (deviceName.isNotEmpty) {
+          errors.add('Device ($deviceName) unbonded itself');
+        } else {
+          final batteryVoltage = parseBatteryFromRawAdvBytes(
+            result.advertisementData.rawAdvBytes,
+          );
+          print('${device.aliasName}: found (RSSI: ${result.rssi} dBm)');
+          if (batteryVoltage != null) {
+            device.batteryVoltage = batteryVoltage;
+            print('Battery: ${batteryVoltage.toStringAsFixed(2)}V');
+          } else {
+            errors.add(
+              'Failed to retrieve battery level for ${device.aliasName}',
+            );
+          }
         }
-        // Why did it not save it?
         await device.save();
         break;
       }
     }
   }
+
+  for (final device in devices) {
+    if (!scannedMacs.contains(device.macAddress.toLowerCase())) {
+      errors.add('Device ${device.aliasName} wasn\'t found');
+    }
+  }
+
+  return errors.join('\n');
 }
