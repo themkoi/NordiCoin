@@ -52,11 +52,15 @@ int txPowerFromString(String str) {
   final settings = box.get(0) as Settings;
 
   if (settings.alertsManualOverride && settings.alertsManualOverrideAlert) {
-    return (isOn: true, reason: 'Manual override forced');
+    final result = (isOn: true, reason: 'Manual override forced');
+    print('areAlertsOn: $result');
+    return result;
   }
 
   if (settings.alertsManualOverride && !settings.alertsManualOverrideAlert) {
-    return (isOn: false, reason: 'Manual override disabled');
+    final result = (isOn: false, reason: 'Manual override disabled');
+    print('areAlertsOn: $result');
+    return result;
   }
 
   final now = DateTime.now();
@@ -75,12 +79,14 @@ int txPowerFromString(String str) {
         '${settings.alertsOnAfterTimeH.toString().padLeft(2, '0')}:${settings.alertsOnAfterTimeM.toString().padLeft(2, '0')}';
     final offStr =
         '${settings.alertsOffAfterTimeH.toString().padLeft(2, '0')}:${settings.alertsOffAfterTimeM.toString().padLeft(2, '0')}';
-    return (
+    final result = (
       isOn: isOn,
       reason: isOn
           ? 'Within alert window ($onStr - $offStr)'
           : 'Outside alert window ($onStr - $offStr)',
     );
+    print('areAlertsOn: $result');
+    return result;
   } else {
     final isOn =
         currentMinutes >= offTimeMinutes || currentMinutes < onTimeMinutes;
@@ -88,12 +94,14 @@ int txPowerFromString(String str) {
         '${settings.alertsOnAfterTimeH.toString().padLeft(2, '0')}:${settings.alertsOnAfterTimeM.toString().padLeft(2, '0')}';
     final offStr =
         '${settings.alertsOffAfterTimeH.toString().padLeft(2, '0')}:${settings.alertsOffAfterTimeM.toString().padLeft(2, '0')}';
-    return (
+    final result = (
       isOn: isOn,
       reason: isOn
           ? 'Within alert window ($offStr - $onStr)'
           : 'Outside alert window ($offStr - $onStr)',
     );
+    print('areAlertsOn: $result');
+    return result;
   }
 }
 

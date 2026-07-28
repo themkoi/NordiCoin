@@ -2,18 +2,63 @@ import 'dart:async';
 
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
 import '../data.dart';
 import '../utils/scan.dart';
 import '../utils/other.dart';
+import '../utils/ble.dart';
 
 bool _isRunning = false;
+bool _notificationShown = false;
 StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
+final FlutterLocalNotificationsPlugin _notificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+const AndroidNotificationChannel _channel = AndroidNotificationChannel(
+  'background_scan_id',
+  'Background Scan',
+  description: 'Notifications for background BLE scanning',
+  importance: Importance.low,
+);
+
+Future<void> _showRunningNotification() async {
+  if (_notificationShown) return;
+  await _notificationsPlugin.show(
+    1,
+    '',
+    '',
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'background_scan_id',
+        'Background Scan',
+        icon: '@drawable/notification_icon',
+        ongoing: true,
+        autoCancel: false,
+        importance: Importance.low,
+        priority: Priority.low,
+      ),
+    ),
+  );
+  _notificationShown = true;
+}
+
+Future<void> _hideRunningNotification() async {
+  if (!_notificationShown) return;
+  await _notificationsPlugin.cancel(1);
+  _notificationShown = false;
+}
 
 Future<void> initializeBackgroundScanService() async {
   final service = FlutterBackgroundService();
+
+  await _notificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(_channel);
 
   await service.configure(
     androidConfiguration: AndroidConfiguration(
@@ -39,6 +84,7 @@ void onStart(ServiceInstance service) async {
     _scanResultsSubscription?.cancel();
     _scanResultsSubscription = null;
     FlutterBluePlus.stopScan();
+    await _notificationsPlugin.cancel(1);
     service.stopSelf();
   });
 
@@ -47,6 +93,12 @@ void onStart(ServiceInstance service) async {
 
 Future<void> _startScanLoop(ServiceInstance service) async {
   print('Service started, scanning loop initiated.');
+
+  // initial notification
+  if (areAlertsOn().isOn) {
+    await _showRunningNotification();
+  }
+
   while (_isRunning) {
     final settingsBox = Hive.box(hiveBoxSettings);
     final settings = settingsBox.get(0) as Settings;
@@ -62,6 +114,15 @@ Future<void> _startScanLoop(ServiceInstance service) async {
       print('Service stopped during wait interval.');
       break;
     }
+
+    final alertsStatus = areAlertsOn();
+    if (!alertsStatus.isOn) {
+      print('Service: alerts are off, skipping scan (${alertsStatus.reason}).');
+      await _hideRunningNotification();
+      continue;
+    }
+
+    await _showRunningNotification();
 
     print('Service scan interval complete, starting scan.');
     await _performScan(service);

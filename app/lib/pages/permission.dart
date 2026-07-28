@@ -19,6 +19,7 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
   bool _fineLocationGranted = false;
   bool _bgLocationGranted = false;
   bool _bluetoothScanGranted = false;
+  bool _batteryOptimizationExcluded = false;
   bool _allGranted = false;
 
   late StreamSubscription<BluetoothAdapterState> _adapterStateSubscription;
@@ -44,11 +45,13 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
     final fine = await Permission.location.isGranted;
     final bg = await Permission.locationAlways.isGranted;
     final bt = await Permission.bluetoothScan.isGranted;
+    final batteryOk = await Permission.ignoreBatteryOptimizations.isGranted;
     if (mounted) {
       setState(() {
         _fineLocationGranted = fine;
         _bgLocationGranted = bg;
         _bluetoothScanGranted = bt;
+        _batteryOptimizationExcluded = batteryOk;
         _allGranted = _checkAll();
       });
     }
@@ -58,7 +61,8 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
     return _adapterState == BluetoothAdapterState.on &&
         _fineLocationGranted &&
         _bgLocationGranted &&
-        _bluetoothScanGranted;
+        _bluetoothScanGranted &&
+        _batteryOptimizationExcluded;
   }
 
   Future<void> _requestFineLocation() async {
@@ -108,6 +112,25 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
       Snackbar.show(
         SnackbarLocation.secondary,
         'Bluetooth scan permission is required.',
+        success: false,
+      );
+    }
+  }
+
+  Future<void> _requestBatteryOptimizationExclusion() async {
+    final result = await Permission.ignoreBatteryOptimizations
+        .request()
+        .isGranted;
+    if (mounted) {
+      setState(() {
+        _batteryOptimizationExcluded = result;
+        _allGranted = _checkAll();
+      });
+    }
+    if (!result) {
+      Snackbar.show(
+        SnackbarLocation.secondary,
+        'Battery optimization exclusion is required for reliable background scanning.',
         success: false,
       );
     }
@@ -237,6 +260,13 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
                             message:
                                 'Required to find, connect and track the NordCoin device via Bluetooth.',
                             onPressed: _requestBluetoothScan,
+                          ),
+                        if (!_batteryOptimizationExcluded)
+                          buildPermissionButton(
+                            title: 'Battery Optimization',
+                            message:
+                                'Required to allow background scanning even when the screen is off.',
+                            onPressed: _requestBatteryOptimizationExclusion,
                           ),
                         if (!_fineLocationGranted)
                           buildPermissionButton(

@@ -7,7 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'consts.dart';
 import 'data.dart';
-import 'pages/ble_permission.dart';
+import 'pages/permission.dart';
 import 'pages/scan.dart';
 import 'pages/settings.dart';
 import 'pages/status_devices.dart';
@@ -123,15 +123,17 @@ class _BleGateWrapperState extends State<BleGateWrapper> {
     _check();
   }
 
-  // Similar to _checkPermissions in ble_permission
+  // Similar to _checkPermissions in permission
   Future<void> _check() async {
     final state = await FlutterBluePlus.adapterState.first;
     final fine = await Permission.location.isGranted;
     final bg = await Permission.locationAlways.isGranted;
     final bt = await Permission.bluetoothScan.isGranted;
+    final battery = await Permission.ignoreBatteryOptimizations.isGranted;
     if (mounted) {
       setState(() {
-        _allGranted = state == BluetoothAdapterState.on && fine && bg && bt;
+        _allGranted =
+            state == BluetoothAdapterState.on && fine && bg && bt && battery;
       });
     }
   }
