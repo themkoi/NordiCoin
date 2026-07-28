@@ -134,32 +134,35 @@ class SettingsAdapter extends TypeAdapter<Settings> {
     };
     return Settings(
       alertsManualOverride: fields[0] as bool,
-      alertsOffAfterTimeH: fields[1] as int,
-      alertsOffAfterTimeM: fields[2] as int,
-      alertsOnAfterTimeH: fields[3] as int,
-      alertsOnAfterTimeM: fields[4] as int,
-      scanFrequencyTimeM: fields[5] as int,
-      defaultDeviceSettings: fields[6] as OnAppDevice,
+      alertsManualOverrideAlert: fields[1] as bool,
+      alertsOffAfterTimeH: fields[2] as int,
+      alertsOffAfterTimeM: fields[3] as int,
+      alertsOnAfterTimeH: fields[4] as int,
+      alertsOnAfterTimeM: fields[5] as int,
+      scanFrequencyTimeM: fields[6] as int,
+      defaultDeviceSettings: fields[7] as OnAppDevice,
     );
   }
 
   @override
   void write(BinaryWriter writer, Settings obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.alertsManualOverride)
       ..writeByte(1)
-      ..write(obj.alertsOffAfterTimeH)
+      ..write(obj.alertsManualOverrideAlert)
       ..writeByte(2)
-      ..write(obj.alertsOffAfterTimeM)
+      ..write(obj.alertsOffAfterTimeH)
       ..writeByte(3)
-      ..write(obj.alertsOnAfterTimeH)
+      ..write(obj.alertsOffAfterTimeM)
       ..writeByte(4)
-      ..write(obj.alertsOnAfterTimeM)
+      ..write(obj.alertsOnAfterTimeH)
       ..writeByte(5)
-      ..write(obj.scanFrequencyTimeM)
+      ..write(obj.alertsOnAfterTimeM)
       ..writeByte(6)
+      ..write(obj.scanFrequencyTimeM)
+      ..writeByte(7)
       ..write(obj.defaultDeviceSettings);
   }
 
