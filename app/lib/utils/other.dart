@@ -1,3 +1,13 @@
+import 'package:flutter/material.dart';
+
+Color dbmColor(int dbm) {
+  if (dbm >= -50) return Colors.green;
+  if (dbm >= -65) return Colors.lightGreen;
+  if (dbm >= -75) return Colors.amber;
+  if (dbm >= -85) return Colors.orange;
+  return Colors.red;
+}
+
 String formatTimeAgo(DateTime time) {
   final now = DateTime.now();
   final difference = now.difference(time);

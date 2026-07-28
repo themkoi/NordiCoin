@@ -329,6 +329,7 @@ class _DevicePageState extends State<DevicePage> {
               icon: Icons.signal_cellular_alt,
               label: 'RSSI',
               value: '${_device.lastSeenRssi} dBm',
+              valueColor: dbmColor(_device.lastSeenRssi),
             ),
             const SizedBox(height: 4),
             _buildDetailRow(
@@ -352,6 +353,7 @@ class _DevicePageState extends State<DevicePage> {
     required IconData icon,
     required String label,
     required String value,
+    Color? valueColor,
   }) {
     return Row(
       children: [
@@ -367,7 +369,12 @@ class _DevicePageState extends State<DevicePage> {
           ),
         ),
         Expanded(
-          child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: valueColor,
+                ),
+          ),
         ),
       ],
     );

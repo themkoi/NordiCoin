@@ -164,6 +164,7 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                   icon: Icons.signal_cellular_alt,
                   label: 'Latest RSSI',
                   value: '${device.lastSeenRssi} dBm',
+                  valueColor: dbmColor(device.lastSeenRssi),
                 ),
                 const SizedBox(height: 4),
                 _buildDetailRow(
@@ -182,6 +183,7 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
     required IconData icon,
     required String label,
     required String value,
+    Color? valueColor,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +200,12 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
           ),
         ),
         Expanded(
-          child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: valueColor,
+                ),
+          ),
         ),
       ],
     );
