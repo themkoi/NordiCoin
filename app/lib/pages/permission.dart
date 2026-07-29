@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../utils/snackbar.dart';
+import '../utils/other.dart';
 
 class BlePermissionGate extends StatefulWidget {
   const BlePermissionGate({super.key, required this.onBluetoothReady});
@@ -71,11 +71,12 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
       _fineLocationGranted = status.isGranted;
       _allGranted = _checkAll();
     });
-    if (!status.isGranted) {
-      Snackbar.show(
-        SnackbarLocation.secondary,
-        'Fine location permission is required for Bluetooth scanning.',
-        success: false,
+    if (!status.isGranted && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Fine location permission is required for Bluetooth scanning.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -88,16 +89,20 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
     });
     if (status.isPermanentlyDenied) {
       openAppSettings();
-      Snackbar.show(
-        SnackbarLocation.secondary,
-        'Please enable "Allow all the time" in app settings.',
-        success: false,
-      );
-    } else if (!status.isGranted) {
-      Snackbar.show(
-        SnackbarLocation.secondary,
-        'Background location permission is required for continuous tracking.',
-        success: false,
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enable "Allow all the time" in app settings.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else if (!status.isGranted && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Background location permission is required for continuous tracking.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -108,11 +113,12 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
       _bluetoothScanGranted = status.isGranted;
       _allGranted = _checkAll();
     });
-    if (!status.isGranted) {
-      Snackbar.show(
-        SnackbarLocation.secondary,
-        'Bluetooth scan permission is required.',
-        success: false,
+    if (!status.isGranted && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bluetooth scan permission is required.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -127,11 +133,12 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
         _allGranted = _checkAll();
       });
     }
-    if (!result) {
-      Snackbar.show(
-        SnackbarLocation.secondary,
-        'Battery optimization exclusion is required for reliable background scanning.',
-        success: false,
+    if (!result && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Battery optimization exclusion is required for reliable background scanning.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -172,15 +179,17 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
       child: ElevatedButton(
         child: const Text('Enable Bluetooth'),
         onPressed: () async {
+          final messenger = ScaffoldMessenger.of(context);
           try {
             // This is here because FlutterBluePlus.turnOn also request it, but the GUI later is broken otherwise
             await _requestBluetoothScan();
             await FlutterBluePlus.turnOn();
           } catch (e) {
-            Snackbar.show(
-              SnackbarLocation.secondary,
-              prettyException("Turn On Error:", e),
-              success: false,
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(prettyException("Turn On Error:", e)),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         },
@@ -227,9 +236,7 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldMessenger(
-      key: Snackbar.snackBarKeySecondary,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.lightBlue,
         body: Center(
           child: SingleChildScrollView(
@@ -308,7 +315,6 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
             ),
           ),
         ),
-      ),
     );
   }
 }

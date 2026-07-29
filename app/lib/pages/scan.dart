@@ -6,9 +6,9 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
-import '../utils/snackbar.dart';
 import '../utils/ble.dart';
 import '../data.dart';
+import '../utils/other.dart';
 import 'status_devices.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -44,11 +44,14 @@ class _ScanScreenState extends State<ScanScreen> {
         }
       },
       onError: (e) {
-        Snackbar.show(
-          SnackbarLocation.secondary,
-          prettyException("Scan Error:", e),
-          success: false,
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(prettyException("Scan Error:", e)),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       },
     );
 
@@ -76,11 +79,14 @@ class _ScanScreenState extends State<ScanScreen> {
         continuousDivisor: 1,
       );
     } catch (e) {
-      Snackbar.show(
-        SnackbarLocation.secondary,
-        prettyException("Start Scan Error:", e),
-        success: false,
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(prettyException("Start Scan Error:", e)),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
     if (mounted) {
       setState(() {});
@@ -91,17 +97,20 @@ class _ScanScreenState extends State<ScanScreen> {
     try {
       FlutterBluePlus.stopScan();
     } catch (e) {
-      Snackbar.show(
-        SnackbarLocation.secondary,
-        prettyException("Stop Scan Error:", e),
-        success: false,
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(prettyException("Stop Scan Error:", e)),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   Future<void> onConnectPressed(BluetoothDevice device) async {
     final box = Hive.box(hiveBoxDevices);
-    final deviceName = device.platformName ?? '';
+    final deviceName = device.platformName;
     final deviceId = deviceName.contains('-')
         ? deviceName.split('-').skip(1).join('-')
         : deviceName;
@@ -202,9 +211,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldMessenger(
-      key: Snackbar.snackBarKeySecondary,
-      child: Scaffold(
+    return Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -214,7 +221,6 @@ class _ScanScreenState extends State<ScanScreen> {
           actions: [buildScanButton(), const SizedBox(width: 15)],
         ),
         body: ListView(children: <Widget>[..._buildScanResultTiles()]),
-      ),
     );
   }
 }

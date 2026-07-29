@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../consts.dart';
 import '../data.dart';
@@ -40,6 +42,15 @@ String formatTimeAgo(DateTime time) {
     final hours = (difference.inHours % 24);
     return hours > 0 ? '${days}d ${hours}h ago' : '${days}d ago';
   }
+}
+
+String prettyException(String prefix, dynamic e) {
+  if (e is FlutterBluePlusException) {
+    return "$prefix ${e.description}";
+  } else if (e is PlatformException) {
+    return "$prefix ${e.message}";
+  }
+  return prefix + e.toString();
 }
 
 String formatMinutes(int minutes) {

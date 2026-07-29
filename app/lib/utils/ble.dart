@@ -42,10 +42,12 @@ String txPowerToString(int value) {
   }
 }
 
+/*
 int txPowerFromString(String str) {
   final cleaned = str.replaceAll('dBm', '').trim();
   return int.tryParse(cleaned) ?? 0;
 }
+*/
 
 ({bool isOn, String reason}) areAlertsOn() {
   final box = Hive.box(hiveBoxSettings);
