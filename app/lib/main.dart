@@ -11,7 +11,7 @@ import 'pages/permission.dart';
 import 'pages/scan.dart';
 import 'pages/settings.dart';
 import 'pages/status_devices.dart';
-import 'services/background_scan_service.dart';
+import 'service/background_scan.dart';
 import 'utils/other.dart' show initHive;
 
 void main() async {
