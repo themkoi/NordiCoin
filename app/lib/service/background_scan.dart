@@ -131,6 +131,17 @@ Future<void> _startScanLoop(ServiceInstance service) async {
 }
 
 Future<void> _performScan(ServiceInstance service) async {
+  // Load current bonded devices
+  final box = Hive.box(hiveBoxDevices);
+  final devices = <Device>[];
+  for (final key in box.keys) {
+    final value = box.get(key);
+    if (value is Device) {
+      devices.add(value);
+    }
+  }
+
+  final foundMacAddresses = <String>{};
   final collectedResults = <ScanResult>[];
 
   _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
@@ -145,6 +156,27 @@ Future<void> _performScan(ServiceInstance service) async {
       } else {
         collectedResults.add(newResult);
       }
+
+      final scannedMac = newResult.device.remoteId.str.toLowerCase();
+      if (!foundMacAddresses.contains(scannedMac)) {
+        for (final device in devices) {
+          if (device.macAddress.toLowerCase() == scannedMac) {
+            foundMacAddresses.add(scannedMac);
+            print("Found bonded device: ${device.aliasName}");
+            break;
+          }
+        }
+      }
+
+      // Early stop: all bonded devices found
+      if (foundMacAddresses.length == devices.length && devices.isNotEmpty) {
+        print(
+          'All ${devices.length} bonded device(s) found, stopping scan early.',
+        );
+        try {
+          FlutterBluePlus.stopScan();
+        } catch (_) {}
+      }
     }
   });
 
@@ -157,7 +189,7 @@ Future<void> _performScan(ServiceInstance service) async {
       continuousDivisor: 1,
     );
 
-    // Is this the proper way to wait for it to finish?
+    // Wait for scan to finish (either by timeout or early stop)
     await FlutterBluePlus.isScanning.firstWhere((isScanning) => !isScanning);
   } catch (e) {
     print('Service, error during scan: $e');
@@ -176,16 +208,6 @@ Future<void> _performScan(ServiceInstance service) async {
 
   print('Service scan finished, found ${collectedResults.length} devices');
 
-  // Load current devices
-  final box = Hive.box(hiveBoxDevices);
-  final devices = <Device>[];
-  for (final key in box.keys) {
-    final value = box.get(key);
-    if (value is Device) {
-      devices.add(value);
-    }
-  }
-
   final scannedMacs = <String>{};
 
   for (final result in collectedResults) {
@@ -194,7 +216,6 @@ Future<void> _performScan(ServiceInstance service) async {
 
     for (final device in devices) {
       if (device.macAddress.toLowerCase() == scannedMac) {
-        print("Found bonded device: ${device.aliasName}");
         device.lastSeenTime = DateTime.now();
         device.lastSeenRssi = result.rssi;
 

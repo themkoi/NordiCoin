@@ -31,7 +31,17 @@ double? parseBatteryFromRawAdvBytes(List<int>? rawAdvBytes) {
 Future<String> startScan() async {
   print('Starting BLE scan...');
 
-  // Collect scan results during the scan for later
+  // Load current bonded devices
+  final box = Hive.box(hiveBoxDevices);
+  final devices = <Device>[];
+  for (final key in box.keys) {
+    final value = box.get(key);
+    if (value is Device) {
+      devices.add(value);
+    }
+  }
+
+  final foundMacAddresses = <String>{};
   final collectedResults = <ScanResult>[];
   final subscription = FlutterBluePlus.scanResults.listen((results) {
     // Keep only the best RSSI result per device
@@ -45,6 +55,25 @@ Future<String> startScan() async {
         }
       } else {
         collectedResults.add(newResult);
+      }
+
+      final scannedMac = newResult.device.remoteId.str.toLowerCase();
+      if (!foundMacAddresses.contains(scannedMac)) {
+        for (final device in devices) {
+          if (device.macAddress.toLowerCase() == scannedMac) {
+            foundMacAddresses.add(scannedMac);
+            print('${device.aliasName}: found (RSSI: ${newResult.rssi} dBm)');
+            break;
+          }
+        }
+      }
+
+      // Early stop: all bonded devices found
+      if (foundMacAddresses.length == devices.length && devices.isNotEmpty) {
+        print(
+          'All ${devices.length} bonded device(s) found, stopping scan early.',
+        );
+        FlutterBluePlus.stopScan();
       }
     }
   });
@@ -63,24 +92,12 @@ Future<String> startScan() async {
     rethrow;
   }
 
-  await Future.delayed(const Duration(seconds: 15));
-
-  // To be sure...
-  FlutterBluePlus.stopScan();
+  // Wait for scan to finish (either by timeout or early stop)
+  await FlutterBluePlus.isScanning.firstWhere((isScanning) => !isScanning);
   await subscription.cancel();
   print('Scan finished.');
 
   print('Scan Found ${collectedResults.length} devices');
-
-  final box = Hive.box(hiveBoxDevices);
-  final devices = <Device>[];
-  for (final key in box.keys) {
-    final value = box.get(key);
-    if (value is Device) {
-      devices.add(value);
-    }
-  }
-  print('Loaded ${devices.length} devices from Hive');
 
   final errors = <String>[];
   final scannedMacs = <String>{};
