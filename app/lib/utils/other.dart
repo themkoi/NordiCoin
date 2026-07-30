@@ -32,15 +32,15 @@ String formatTimeAgo(DateTime time) {
   } else if (difference.inMinutes < 60) {
     final mins = difference.inMinutes;
     final secs = difference.inSeconds % 60;
-    return secs > 0 ? '${mins}m ${secs}s ago' : '${mins}m ago';
+    return secs > 0 ? '${mins}m ${secs}s' : '${mins}m';
   } else if (difference.inHours < 24) {
     final hours = difference.inHours;
     final mins = (difference.inMinutes % 60);
-    return mins > 0 ? '${hours}h ${mins}m ago' : '${hours}h ago';
+    return mins > 0 ? '${hours}h ${mins}m' : '${hours}h';
   } else {
     final days = difference.inDays;
     final hours = (difference.inHours % 24);
-    return hours > 0 ? '${days}d ${hours}h ago' : '${days}d ago';
+    return hours > 0 ? '${days}d ${hours}h' : '${days}d';
   }
 }
 

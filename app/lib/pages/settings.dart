@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
 import '../data.dart';
+import '../service/actions.dart';
 import '../utils/ble.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -579,9 +580,97 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Center(
+              child: OutlinedButton.icon(
+                onPressed: _showTestActionDialog,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Test Action'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+
+  void _showTestActionDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => const _TestActionDialog(),
+    );
+  }
+}
+
+class _TestActionDialog extends StatefulWidget {
+  const _TestActionDialog();
+
+  @override
+  State<_TestActionDialog> createState() => _TestActionDialogState();
+}
+
+class _TestActionDialogState extends State<_TestActionDialog> {
+  ActionType? _selectedAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Test Action'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Select an action to test:'),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<ActionType>(
+            initialValue: _selectedAction,
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+            items:
+                const {
+                  ActionType.notification: 'Notification',
+                  ActionType.buzzing: 'Buzzing (Vibrate)',
+                  ActionType.loudAlarm: 'Loud Alarm (Play Sound)',
+                }.entries.map((e) {
+                  return DropdownMenuItem<ActionType>(
+                    value: e.key,
+                    child: Text(e.value),
+                  );
+                }).toList(),
+            onChanged: (v) {
+              setState(() {
+                _selectedAction = v;
+              });
+            },
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _selectedAction != null
+              ? () async {
+                  Navigator.of(context).pop();
+                  await executeAction(_selectedAction!);
+                }
+              : null,
+          child: const Text('Execute'),
+        ),
+      ],
     );
   }
 }

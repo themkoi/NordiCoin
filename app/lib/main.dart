@@ -12,6 +12,7 @@ import 'pages/scan.dart';
 import 'pages/settings.dart';
 import 'pages/status_devices.dart';
 import 'service/background_scan.dart';
+import 'service/actions.dart';
 import 'utils/other.dart' show initHive;
 
 void main() async {
@@ -37,6 +38,7 @@ void main() async {
 
   // After hive
   await initializeBackgroundScanService();
+  await initActions();
 
   runApp(const MyApp());
 }
