@@ -665,7 +665,7 @@ class _TestActionDialogState extends State<_TestActionDialog> {
           onPressed: _selectedAction != null
               ? () async {
                   Navigator.of(context).pop();
-                  await executeAction(_selectedAction!);
+                  await executeAction(_selectedAction!, 'Test action executed');
                 }
               : null,
           child: const Text('Execute'),

@@ -403,6 +403,33 @@ class _DevicePageState extends State<DevicePage> {
               label: 'ID',
               value: _device.id,
             ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _device.enabledAlerts = !_device.enabledAlerts;
+                });
+                _device.save();
+                widget.statusKey.currentState?.loadDevices();
+              },
+              icon: Icon(
+                _device.enabledAlerts
+                    ? Icons.notifications_off
+                    : Icons.notifications_active,
+                size: 18,
+              ),
+              label: Text(
+                _device.enabledAlerts ? 'Disable Alerts' : 'Enable Alerts',
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _device.enabledAlerts
+                    ? Theme.of(context).colorScheme.errorContainer
+                    : Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: _device.enabledAlerts
+                    ? Theme.of(context).colorScheme.onErrorContainer
+                    : Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
           ],
         ),
       ),

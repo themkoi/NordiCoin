@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
 import '../data.dart';
+import '../service/actions.dart';
 import '../utils/scan.dart';
 import '../utils/other.dart';
 import '../utils/ble.dart';
@@ -16,6 +17,22 @@ bool _notificationShown = false;
 StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
 final FlutterLocalNotificationsPlugin _notificationsPlugin =
     FlutterLocalNotificationsPlugin();
+
+// For cooldown checking
+class TriggeredAlert {
+  final String deviceId;
+  final ActionType alertAction;
+  final DateTime triggeredAt;
+
+  TriggeredAlert({
+    required this.deviceId,
+    required this.alertAction,
+    required this.triggeredAt,
+  });
+}
+
+// There is no need to clear this, we simply will have more delay?
+final List<TriggeredAlert> _triggeredAlerts = [];
 
 const AndroidNotificationChannel _channel = AndroidNotificationChannel(
   'background_scan_id',
@@ -74,7 +91,9 @@ Future<void> initializeBackgroundScanService() async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  // Because the task is a seperate process, or something
   await initHive();
+  await initActions();
 
   _isRunning = true;
 
@@ -126,6 +145,11 @@ Future<void> _startScanLoop(ServiceInstance service) async {
 
     print('Service scan interval complete, starting scan.');
     await _performScan(service);
+
+    print("Per device alert check");
+    await _checkDeviceAlerts();
+
+    print("Background loop finished...");
   }
   print("Scan loop function exited");
 }
@@ -232,4 +256,127 @@ Future<void> _performScan(ServiceInstance service) async {
   }
 
   print('Background scan cycle complete');
+}
+
+// Priority order: high -> medium -> low, if higher priority triggers, lower is skipped
+Future<void> _checkDeviceAlerts() async {
+  // Get devices (Again, ugh)
+  final box = Hive.box(hiveBoxDevices);
+  final devices = <Device>[];
+  for (final key in box.keys) {
+    final value = box.get(key);
+    if (value is Device) {
+      devices.add(value);
+    }
+  }
+
+  final now = DateTime.now();
+
+  for (final device in devices) {
+    // Only check devices with alerts enabled
+    if (!device.enabledAlerts) {
+      continue;
+    }
+
+    final settings = device.deviceSettings;
+    final lastSeenDiffM = now.difference(device.lastSeenTime).inMinutes;
+
+    // Check HIGH alert first
+    final highAction = settings.highAlertAction;
+    if (highAction != ActionType.none &&
+        _shouldTriggerAlert(device, highAction, settings, now)) {
+      if (lastSeenDiffM >= settings.highAlertLostDeviceTimeM) {
+        print(
+          'HIGH alert for device: ${device.aliasName} '
+          '(last seen ${lastSeenDiffM}m ago, threshold: ${settings.highAlertLostDeviceTimeM}m)',
+        );
+        final highMessage = _buildAlertMessage(device.aliasName, lastSeenDiffM);
+        await executeAction(highAction, highMessage);
+        _addTriggeredAlert(device.id, highAction, now);
+        // Skip rest alerts
+        continue;
+      }
+    }
+
+    // Check MEDIUM alert
+    final mediumAction = settings.mediumAlertAction;
+    if (mediumAction != ActionType.none &&
+        _shouldTriggerAlert(device, mediumAction, settings, now)) {
+      if (lastSeenDiffM >= settings.mediumAlertLostDeviceTimeM) {
+        print(
+          'MEDIUM alert for device: ${device.aliasName} '
+          '(last seen ${lastSeenDiffM}m ago, threshold: ${settings.mediumAlertLostDeviceTimeM}m)',
+        );
+        final mediumMessage = _buildAlertMessage(
+          device.aliasName,
+          lastSeenDiffM,
+        );
+        await executeAction(mediumAction, mediumMessage);
+        _addTriggeredAlert(device.id, mediumAction, now);
+        // Skip low
+        continue;
+      }
+    }
+
+    // Check LOW alert
+    final lowAction = settings.lowAlertAction;
+    if (lowAction != ActionType.none &&
+        _shouldTriggerAlert(device, lowAction, settings, now)) {
+      if (lastSeenDiffM >= settings.lowAlertLostDeviceTimeM) {
+        print(
+          'LOW alert for device: ${device.aliasName} '
+          '(last seen ${lastSeenDiffM}m ago, threshold: ${settings.lowAlertLostDeviceTimeM}m)',
+        );
+        final lowMessage = _buildAlertMessage(device.aliasName, lastSeenDiffM);
+        await executeAction(lowAction, lowMessage);
+        _addTriggeredAlert(device.id, lowAction, now);
+      }
+    }
+  }
+}
+
+// Checks if an alert should be triggered based on cooldown period
+bool _shouldTriggerAlert(
+  Device device,
+  ActionType alertAction,
+  OnAppDevice settings,
+  DateTime now,
+) {
+  final trigger = _triggeredAlerts.firstWhere(
+    (a) => a.deviceId == device.id && a.alertAction == alertAction,
+    orElse: () => TriggeredAlert(
+      deviceId: device.id,
+      alertAction: ActionType.none,
+      triggeredAt: DateTime.now(),
+    ),
+  );
+
+  if (trigger.alertAction == ActionType.none) {
+    // No previous alert for this device, for this action
+    return true;
+  }
+
+  // Check if turningOffAlertTimeM has passed since the last trigger
+  final timeSinceTriggerM = now.difference(trigger.triggeredAt).inMinutes;
+  final canTrigger = timeSinceTriggerM >= settings.turningOffAlertTimeM;
+
+  return canTrigger;
+}
+
+void _addTriggeredAlert(String deviceId, ActionType alertAction, DateTime now) {
+  // Remove any existing alert with the same deviceId and alertAction
+  _triggeredAlerts.removeWhere(
+    (a) => a.deviceId == deviceId && a.alertAction == alertAction,
+  );
+  _triggeredAlerts.add(
+    TriggeredAlert(
+      deviceId: deviceId,
+      alertAction: alertAction,
+      triggeredAt: now,
+    ),
+  );
+}
+
+String _buildAlertMessage(String deviceName, int minutesNotSeen) {
+  return '$deviceName not seen for $minutesNotSeen minutes';
 }

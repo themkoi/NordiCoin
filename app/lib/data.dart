@@ -89,6 +89,9 @@ class Device extends HiveObject {
   @HiveField(7)
   late OnAppDevice deviceSettings;
 
+  @HiveField(8)
+  late bool enabledAlerts;
+
   Device({
     this.aliasName = '',
     this.macAddress = '',
@@ -98,6 +101,7 @@ class Device extends HiveObject {
     this.id = '',
     this.lastSeenUptimeM = 0,
     required this.deviceSettings,
+    this.enabledAlerts = true,
   });
 }
 

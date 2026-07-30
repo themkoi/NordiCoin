@@ -90,6 +90,14 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (!device.enabledAlerts) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.notifications_off,
+                          size: 16,
+                          color: Colors.red.shade700,
+                        ),
+                      ],
                       const SizedBox(width: 8),
                       Icon(
                         Icons.access_time,
@@ -192,6 +200,48 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                   icon: Icons.network_wifi,
                   label: 'MAC address',
                   value: device.macAddress,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final box = Hive.box(hiveBoxDevices);
+                          for (final key in box.keys) {
+                            final value = box.get(key);
+                            if (value is Device && value.id == device.id) {
+                              value.enabledAlerts = !value.enabledAlerts;
+                              await value.save();
+                              break;
+                            }
+                          }
+                          loadDevices();
+                        },
+                        icon: Icon(
+                          device.enabledAlerts
+                              ? Icons.notifications_off
+                              : Icons.notifications_active,
+                          size: 18,
+                        ),
+                        label: Text(
+                          device.enabledAlerts
+                              ? 'Disable Alerts'
+                              : 'Enable Alerts',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: device.enabledAlerts
+                              ? Theme.of(context).colorScheme.errorContainer
+                              : Theme.of(context).colorScheme.primaryContainer,
+                          foregroundColor: device.enabledAlerts
+                              ? Theme.of(context).colorScheme.onErrorContainer
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

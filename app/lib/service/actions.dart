@@ -30,31 +30,35 @@ Future<void> initActions() async {
   );
 }
 
-Future<void> executeAction(ActionType action) async {
+Future<void> executeAction(ActionType action, String message) async {
   switch (action) {
     case ActionType.none:
+      print("Action is none");
       break;
     case ActionType.notification:
-      await _executeNotification();
+      print("Action is notification");
+      await _executeNotification(message);
       break;
     case ActionType.buzzing:
+      print("Action is buzzing");
       await _executeBuzzing();
       break;
     case ActionType.loudAlarm:
+      print("Action is loud alarm");
       await _executeLoudAlarm();
       break;
   }
 }
 
-Future<void> _executeNotification() async {
+Future<void> _executeNotification(String message) async {
   await _notificationsPlugin.show(
     999,
-    'NordCoin Alert',
-    'This is a test notification',
+    'NordCoin',
+    message,
     const NotificationDetails(
       android: AndroidNotificationDetails(
-        'action_test_id',
-        'Action Test',
+        'nordicoin',
+        'Nordicoin_Action',
         importance: Importance.high,
         priority: Priority.high,
       ),
@@ -64,7 +68,32 @@ Future<void> _executeNotification() async {
 
 Future<void> _executeBuzzing() async {
   if (await Vibration.hasVibrator()) {
-    await Vibration.vibrate(pattern: [0, 500, 200, 500]);
+    await Vibration.vibrate(
+      pattern: [
+        0,
+        500,
+        300,
+        500,
+        300,
+        500,
+        300,
+        500,
+        300,
+        500,
+        300,
+        500,
+        300,
+        500,
+        300,
+        500,
+        300,
+        500,
+        300,
+        500,
+        300,
+        500,
+      ],
+    );
   }
 }
 
@@ -72,5 +101,3 @@ Future<void> _executeLoudAlarm() async {
   await _alarmPlayer.seek(Duration.zero);
   await _alarmPlayer.play();
 }
-
-

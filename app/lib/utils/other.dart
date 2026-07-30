@@ -11,8 +11,17 @@ Future<void> initHive() async {
   Hive.registerAdapter(OnAppDeviceAdapter());
   Hive.registerAdapter(DeviceAdapter());
   Hive.registerAdapter(SettingsAdapter());
-  await Hive.openBox(hiveBoxDevices);
-  await Hive.openBox(hiveBoxSettings);
+
+  try {
+    await Hive.openBox(hiveBoxDevices);
+    await Hive.openBox(hiveBoxSettings);
+  } catch (e) {
+    debugPrint('Hive init failed, clearing boxes and starting fresh: $e');
+    await Hive.deleteBoxFromDisk(hiveBoxDevices);
+    await Hive.deleteBoxFromDisk(hiveBoxSettings);
+    await Hive.openBox(hiveBoxDevices);
+    await Hive.openBox(hiveBoxSettings);
+  }
 }
 
 Color dbmColor(int dbm) {
