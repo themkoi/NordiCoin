@@ -58,6 +58,7 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
     final percentage = batteryPercentageFromVoltage(device.batteryVoltage);
     final batteryColor = batteryColorFromPercentage(percentage);
     final lastSeenStr = formatTimeAgo(device.lastSeenTime);
+    final rssiColor = dbmColor(device.lastSeenRssi);
 
     return Column(
       children: [
@@ -90,11 +91,26 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      Icon(Icons.access_time, size: 16, color: Colors.grey[400]),
+                      const SizedBox(width: 2),
                       Text(
                         lastSeenStr,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[400],
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.signal_cellular_alt,
+                        size: 16,
+                        color: rssiColor,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${device.lastSeenRssi} dBm',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: rssiColor),
                       ),
                       const SizedBox(width: 8),
                       Icon(Icons.battery_full, size: 16, color: batteryColor),
