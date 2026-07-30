@@ -74,7 +74,9 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
     if (!status.isGranted && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Fine location permission is required for Bluetooth scanning.'),
+          content: Text(
+            'Fine location permission is required for Bluetooth scanning.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -92,7 +94,9 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please enable "Allow all the time" in app settings.'),
+            content: Text(
+              'Please enable "Allow all the time" in app settings.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -100,7 +104,9 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
     } else if (!status.isGranted && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Background location permission is required for continuous tracking.'),
+          content: Text(
+            'Background location permission is required for continuous tracking.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -136,7 +142,9 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
     if (!result && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Battery optimization exclusion is required for reliable background scanning.'),
+          content: Text(
+            'Battery optimization exclusion is required for reliable background scanning.',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -237,84 +245,84 @@ class _BlePermissionGateState extends State<BlePermissionGate> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.lightBlue,
-        body: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                _buildStatusIcon(context),
-                const SizedBox(height: 16),
-                Text(
-                  _buildStatusText(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+      backgroundColor: Colors.lightBlue,
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _buildStatusIcon(context),
+              const SizedBox(height: 16),
+              Text(
+                _buildStatusText(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (_adapterState != BluetoothAdapterState.on)
+                buildTurnOnButton(context),
+              if (_adapterState == BluetoothAdapterState.on) ...[
+                const SizedBox(height: 30),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                  child: Column(
+                    children: [
+                      if (!_bluetoothScanGranted)
+                        buildPermissionButton(
+                          title: 'Bluetooth Scanning',
+                          message:
+                              'Required to find, connect and track the NordCoin device via Bluetooth.',
+                          onPressed: _requestBluetoothScan,
+                        ),
+                      if (!_batteryOptimizationExcluded)
+                        buildPermissionButton(
+                          title: 'Battery Optimization',
+                          message:
+                              'Required to allow background scanning even when the screen is off.',
+                          onPressed: _requestBatteryOptimizationExclusion,
+                        ),
+                      if (!_fineLocationGranted)
+                        buildPermissionButton(
+                          title: 'Location Access',
+                          message:
+                              'Android requires location permission to scan (so track NordiCoin devices) for Bluetooth devices. Your location is not stored or shared.',
+                          onPressed: _requestFineLocation,
+                        ),
+                      // First _fineLocationGranted, then bg location request, to be sure
+                      if (!_bgLocationGranted && _fineLocationGranted)
+                        buildPermissionButton(
+                          title: 'Background Location',
+                          message:
+                              'Required to track devices also in the background while the screen is off.',
+                          onPressed: _requestBackgroundLocation,
+                        ),
+                      if (_allGranted) ...[
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () {
+                            widget.onBluetoothReady();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 12,
+                            ),
+                          ),
+                          child: const Text('Continue'),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                if (_adapterState != BluetoothAdapterState.on)
-                  buildTurnOnButton(context),
-                if (_adapterState == BluetoothAdapterState.on) ...[
-                  const SizedBox(height: 30),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                    child: Column(
-                      children: [
-                        if (!_bluetoothScanGranted)
-                          buildPermissionButton(
-                            title: 'Bluetooth Scanning',
-                            message:
-                                'Required to find, connect and track the NordCoin device via Bluetooth.',
-                            onPressed: _requestBluetoothScan,
-                          ),
-                        if (!_batteryOptimizationExcluded)
-                          buildPermissionButton(
-                            title: 'Battery Optimization',
-                            message:
-                                'Required to allow background scanning even when the screen is off.',
-                            onPressed: _requestBatteryOptimizationExclusion,
-                          ),
-                        if (!_fineLocationGranted)
-                          buildPermissionButton(
-                            title: 'Location Access',
-                            message:
-                                'Android requires location permission to scan (so track NordiCoin devices) for Bluetooth devices. Your location is not stored or shared.',
-                            onPressed: _requestFineLocation,
-                          ),
-                        // First _fineLocationGranted, then bg location request, to be sure
-                        if (!_bgLocationGranted && _fineLocationGranted)
-                          buildPermissionButton(
-                            title: 'Background Location',
-                            message:
-                                'Required to track devices also in the background while the screen is off.',
-                            onPressed: _requestBackgroundLocation,
-                          ),
-                        if (_allGranted) ...[
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: () {
-                              widget.onBluetoothReady();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 30,
-                                vertical: 12,
-                              ),
-                            ),
-                            child: const Text('Continue'),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
               ],
-            ),
+            ],
           ),
         ),
+      ),
     );
   }
 }
