@@ -37,7 +37,7 @@ class _ScanScreenState extends State<ScanScreen> {
       _isScanning = false;
     });
 
-    _scanResultsSubscription = FlutterBluePlus.scanResults.listen(
+    _scanResultsSubscription = FlutterBluePlus.onScanResults.listen(
       (results) {
         if (mounted) {
           setState(() => _scanResults = results);
@@ -212,15 +212,15 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          title: const Text('Find Devices'),
-          actions: [buildScanButton(), const SizedBox(width: 15)],
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-        body: ListView(children: <Widget>[..._buildScanResultTiles()]),
+        title: const Text('Find Devices'),
+        actions: [buildScanButton(), const SizedBox(width: 15)],
+      ),
+      body: ListView(children: <Widget>[..._buildScanResultTiles()]),
     );
   }
 }

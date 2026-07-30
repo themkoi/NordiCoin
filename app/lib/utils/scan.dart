@@ -43,7 +43,8 @@ Future<String> startScan() async {
 
   final foundMacAddresses = <String>{};
   final collectedResults = <ScanResult>[];
-  final subscription = FlutterBluePlus.scanResults.listen((results) {
+
+  final subscription = FlutterBluePlus.onScanResults.listen((results) {
     // Keep only the best RSSI result per device
     for (final newResult in results) {
       final existingIndex = collectedResults.indexWhere(

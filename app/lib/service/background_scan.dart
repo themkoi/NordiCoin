@@ -144,7 +144,7 @@ Future<void> _performScan(ServiceInstance service) async {
   final foundMacAddresses = <String>{};
   final collectedResults = <ScanResult>[];
 
-  _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
+  _scanResultsSubscription = FlutterBluePlus.onScanResults.listen((results) {
     for (final newResult in results) {
       final existingIndex = collectedResults.indexWhere(
         (r) => r.device.remoteId == newResult.device.remoteId,

@@ -91,7 +91,11 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Icon(Icons.access_time, size: 16, color: Colors.grey[400]),
+                      Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: Colors.grey[400],
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         lastSeenStr,
