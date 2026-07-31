@@ -5,6 +5,29 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../consts.dart';
 import '../data.dart';
 
+// Enabled / Disabled device
+const Color disabledGreyColor = Color(0xFF757575);
+
+Color alertColorFromDevice(Device device) {
+  final settings = device.deviceSettings;
+  final minutesSinceLastSeen = DateTime.now()
+      .difference(device.lastSeenTime)
+      .inMinutes;
+
+  if (!device.enabledAlerts) {
+    return disabledGreyColor;
+  }
+
+  if (minutesSinceLastSeen > settings.highAlertLostDeviceTimeM) {
+    return Colors.red;
+  } else if (minutesSinceLastSeen > settings.mediumAlertLostDeviceTimeM) {
+    return Colors.orange;
+  } else if (minutesSinceLastSeen > settings.lowAlertLostDeviceTimeM) {
+    return Colors.green;
+  }
+  return Colors.grey[400]!;
+}
+
 Future<void> initHive() async {
   await Hive.initFlutter();
   Hive.registerAdapter(ActionTypeAdapter());

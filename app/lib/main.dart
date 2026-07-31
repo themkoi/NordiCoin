@@ -15,6 +15,15 @@ import 'service/background_scan.dart';
 import 'service/actions.dart';
 import 'utils/other.dart' show initHive;
 
+final GlobalKey<StatusDevicesPageState> statusKey = GlobalKey<StatusDevicesPageState>();
+
+Future<void> reloadHiveBoxes() async {
+  if (Hive.isBoxOpen(hiveBoxDevices)) {
+    await Hive.box(hiveBoxDevices).close();
+  }
+  await Hive.openBox(hiveBoxDevices);
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -71,6 +80,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         // App came to foreground - stop background scan
         _stopBackgroundScan();
+        reloadHiveBoxes().then((_) {
+          statusKey.currentState?.loadDevices();
+        });
         break;
       case AppLifecycleState.paused:
         // App went to background - resume background scan
@@ -164,10 +176,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
-  final _statusKey = GlobalKey<StatusDevicesPageState>();
 
   List<Widget> get _pages => [
-    StatusDevicesPage(key: _statusKey),
+    StatusDevicesPage(key: statusKey),
     const SettingsPage(),
   ];
 
@@ -211,7 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => ScanScreen(statusKey: _statusKey),
+              builder: (context) => ScanScreen(statusKey: statusKey),
             ),
           );
         },

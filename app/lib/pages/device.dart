@@ -323,7 +323,7 @@ class _DevicePageState extends State<DevicePage> {
             icon: const Icon(Icons.volume_up, size: 18),
             label: const Text('Loud Find'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
           ),
@@ -379,12 +379,21 @@ class _DevicePageState extends State<DevicePage> {
   }
 
   Widget _buildDeviceInfoSection() {
+    final clockColor = alertColorFromDevice(_device);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildDetailRow(
+              icon: Icons.access_time,
+              label: 'Last seen',
+              value:
+                  '${formatTimeAgo(_device.lastSeenTime)} (${_device.lastSeenTime.toString().substring(0, 19)})',
+              valueColor: clockColor,
+            ),
+            const SizedBox(height: 4),
             _buildDetailRow(
               icon: Icons.signal_cellular_alt,
               label: 'RSSI',
@@ -393,9 +402,9 @@ class _DevicePageState extends State<DevicePage> {
             ),
             const SizedBox(height: 4),
             _buildDetailRow(
-              icon: Icons.access_time,
-              label: 'Last seen',
-              value: formatTimeAgo(_device.lastSeenTime),
+              icon: Icons.devices,
+              label: 'MAC',
+              value: _device.macAddress,
             ),
             const SizedBox(height: 4),
             _buildDetailRow(

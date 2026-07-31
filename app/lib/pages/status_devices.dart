@@ -26,6 +26,9 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
   }
 
   Future<void> loadDevices() async {
+    if (!Hive.isBoxOpen(hiveBoxDevices)) {
+      await Hive.openBox(hiveBoxDevices);
+    }
     final box = Hive.box(hiveBoxDevices);
     final devices = <Device>[];
     for (final key in box.keys) {
@@ -60,24 +63,8 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
     final rssiColor = dbmColor(device.lastSeenRssi);
     final lastSeenStr = formatTimeAgo(device.lastSeenTime);
 
-    final minutesSinceLastSeen = DateTime.now()
-        .difference(device.lastSeenTime)
-        .inMinutes;
-
-    final settings = device.deviceSettings;
-    late Color? clockColor;
-    if (minutesSinceLastSeen > settings.highAlertLostDeviceTimeM) {
-      clockColor = Colors.red;
-    } else if (minutesSinceLastSeen > settings.mediumAlertLostDeviceTimeM) {
-      clockColor = Colors.orange;
-    } else if (minutesSinceLastSeen > settings.lowAlertLostDeviceTimeM) {
-      clockColor = Colors.green;
-    } else {
-      clockColor = null;
-    }
-
-    final lineColor = device.enabledAlerts ? clockColor : Colors.grey[400];
-    final disabledGrey = Colors.grey[400];
+    final clockColor = alertColorFromDevice(device);
+    final lineColor = device.enabledAlerts ? clockColor : disabledGreyColor;
 
     return Column(
       children: [
@@ -107,7 +94,7 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                                     : FontWeight.normal,
                                 color: device.enabledAlerts
                                     ? null
-                                    : disabledGrey,
+                                    : disabledGreyColor,
                               ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -117,7 +104,7 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                         Icon(
                           Icons.notifications_off,
                           size: 16,
-                          color: disabledGrey,
+                          color: disabledGreyColor,
                         ),
                       ] else ...[
                         Icon(Icons.access_time, size: 16, color: clockColor),
@@ -214,13 +201,7 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                   value: '${device.lastSeenRssi} dBm',
                   valueColor: dbmColor(device.lastSeenRssi),
                 ),
-                const SizedBox(height: 4),
-                _buildDetailRow(
-                  icon: Icons.network_wifi,
-                  label: 'MAC address',
-                  value: device.macAddress,
-                ),
-                const SizedBox(height: 8),
+
                 Row(
                   children: [
                     Expanded(

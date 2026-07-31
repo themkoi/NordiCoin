@@ -165,6 +165,12 @@ Future<void> _performScan(ServiceInstance service) async {
     }
   }
 
+  // Also because android restricts for power saving non filtered scans
+  if (devices.isEmpty) {
+    print('No bonded devices to scan');
+    return;
+  }
+
   final foundMacAddresses = <String>{};
   final collectedResults = <ScanResult>[];
 
@@ -206,6 +212,8 @@ Future<void> _performScan(ServiceInstance service) async {
 
   try {
     await FlutterBluePlus.startScan(
+      // Android power saving needs this, otherwise no devices found
+      withRemoteIds: devices.map((d) => d.macAddress).toList(),
       timeout: const Duration(seconds: 15),
       androidUsesFineLocation: true,
       androidScanMode: AndroidScanMode.lowLatency,
