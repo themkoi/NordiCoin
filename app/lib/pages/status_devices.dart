@@ -57,8 +57,27 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
     final isHighlighted = _highlightedIndex == index;
     final percentage = batteryPercentageFromVoltage(device.batteryVoltage);
     final batteryColor = batteryColorFromPercentage(percentage);
-    final lastSeenStr = formatTimeAgo(device.lastSeenTime);
     final rssiColor = dbmColor(device.lastSeenRssi);
+    final lastSeenStr = formatTimeAgo(device.lastSeenTime);
+
+    final minutesSinceLastSeen = DateTime.now()
+        .difference(device.lastSeenTime)
+        .inMinutes;
+
+    final settings = device.deviceSettings;
+    late Color? clockColor;
+    if (minutesSinceLastSeen > settings.highAlertLostDeviceTimeM) {
+      clockColor = Colors.red;
+    } else if (minutesSinceLastSeen > settings.mediumAlertLostDeviceTimeM) {
+      clockColor = Colors.orange;
+    } else if (minutesSinceLastSeen > settings.lowAlertLostDeviceTimeM) {
+      clockColor = Colors.green;
+    } else {
+      clockColor = null;
+    }
+
+    final lineColor = device.enabledAlerts ? clockColor : Colors.grey[400];
+    final disabledGrey = Colors.grey[400];
 
     return Column(
       children: [
@@ -86,30 +105,29 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                                 fontWeight: isHighlighted
                                     ? FontWeight.bold
                                     : FontWeight.normal,
+                                color: device.enabledAlerts
+                                    ? null
+                                    : disabledGrey,
                               ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       if (!device.enabledAlerts) ...[
-                        const SizedBox(width: 8),
                         Icon(
                           Icons.notifications_off,
                           size: 16,
-                          color: Colors.red.shade700,
+                          color: disabledGrey,
                         ),
+                      ] else ...[
+                        Icon(Icons.access_time, size: 16, color: clockColor),
                       ],
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: Colors.grey[400],
-                      ),
                       const SizedBox(width: 2),
                       Text(
                         lastSeenStr,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[400],
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: lineColor),
                       ),
                       const SizedBox(width: 8),
                       Icon(
@@ -181,6 +199,7 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
                   icon: Icons.access_time,
                   label: 'Last seen',
                   value: device.lastSeenTime.toString().substring(0, 19),
+                  valueColor: lineColor,
                 ),
                 const SizedBox(height: 4),
                 _buildDetailRow(
