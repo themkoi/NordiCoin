@@ -172,12 +172,12 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
               left: 16,
               right: 16,
               bottom: 8,
-              top: 4,
+              top: 0,
             ),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
