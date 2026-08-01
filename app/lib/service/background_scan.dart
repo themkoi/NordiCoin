@@ -64,7 +64,11 @@ Future<void> _showRunningNotification() async {
 
 Future<void> _hideRunningNotification() async {
   if (!_notificationShown) return;
-  await _notificationsPlugin.cancel(1);
+  try {
+    await _notificationsPlugin.cancel(1);
+  } catch (e) {
+    // I DONT KNOW
+  }
   _notificationShown = false;
 }
 
@@ -95,6 +99,13 @@ void onStart(ServiceInstance service) async {
   await initHive();
   await initActions();
 
+  // Maybe needed too?
+  await _notificationsPlugin.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings('@drawable/notification_icon'),
+    ),
+  );
+
   _isRunning = true;
 
   service.on('stopScan').listen((event) async {
@@ -103,7 +114,11 @@ void onStart(ServiceInstance service) async {
     _scanResultsSubscription?.cancel();
     _scanResultsSubscription = null;
     FlutterBluePlus.stopScan();
-    await _notificationsPlugin.cancel(1);
+    try {
+      await _notificationsPlugin.cancel(1);
+    } catch (e) {
+      // IDK
+    }
     service.stopSelf();
   });
 
