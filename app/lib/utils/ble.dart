@@ -9,6 +9,18 @@ import '../data.dart';
 
 typedef DeviceOperation = Future<void> Function(BluetoothDevice device);
 
+// Shouldn't be needed, maybe placebo but it did improve connecting to the device?
+Future<void> _stopScanBeforeConnection() async {
+  if (!FlutterBluePlus.isScanningNow) {
+    return;
+  }
+
+  await FlutterBluePlus.stopScan();
+  await FlutterBluePlus.isScanning
+      .firstWhere((isScanning) => !isScanning)
+      .timeout(const Duration(seconds: 2));
+}
+
 const List<int> txPowerValues = [
   -40,
   -20,
@@ -122,6 +134,7 @@ Future<bool> connectAndOperate({
 
   var hasError = false;
   try {
+    await _stopScanBeforeConnection();
     await device.connect(license: License.nonprofit);
 
     if (dialogState != null) {

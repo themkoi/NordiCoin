@@ -497,8 +497,6 @@ public class FlutterBluePlusPlugin implements
                     List<Object> withMsd =         (List<Object>) data.get("with_msd");
                     List<Object> withServiceData = (List<Object>) data.get("with_service_data");
                     boolean continuousUpdates =         (boolean) data.get("continuous_updates");
-                    boolean androidLegacy =             (boolean) data.get("android_legacy");
-                    int androidScanMode =                   (int) data.get("android_scan_mode");
                     boolean androidUsesFineLocation =   (boolean) data.get("android_uses_fine_location");
                     boolean androidCheckLocationServices = (boolean) data.get("android_check_location_services");
 
@@ -544,12 +542,14 @@ public class FlutterBluePlusPlugin implements
                             return;
                         }
 
-                        // build scan settings
+                        // Changed to a more agressive scan
                         ScanSettings.Builder builder = new ScanSettings.Builder();
-                        builder.setScanMode(androidScanMode);
+                        builder.setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY);
+                        builder.setReportDelay(0L);
+                        builder.setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES);
                         if (Build.VERSION.SDK_INT >= 26) { // Android 8.0 (August 2017)
                             builder.setPhy(ScanSettings.PHY_LE_ALL_SUPPORTED);
-                            builder.setLegacy(androidLegacy);
+                            builder.setLegacy(false);
                         }
                         ScanSettings settings = builder.build();
 
