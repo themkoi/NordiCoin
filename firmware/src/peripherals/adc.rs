@@ -16,7 +16,7 @@ impl AdcReader {
         let mut channel_config = ChannelConfig::single_ended(VddInput);
         channel_config.gain = saadc::Gain::Gain1_6;
         let mut config = SaadcConfig::default();
-        config.oversample = Oversample::Over256x;
+        config.oversample = Oversample::Over16x;
         config.resolution = saadc::Resolution::_14bit;
         let saadc = Saadc::new(saadc, irq, config, [channel_config]);
         saadc.calibrate().await;

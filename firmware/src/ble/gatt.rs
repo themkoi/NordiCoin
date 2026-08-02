@@ -80,7 +80,7 @@ pub async fn gatt_manager<C: Controller, P: PacketPool>(
                             } else if handle == tx_power_char.handle {
                                 let value = i8::from_gatt(data)
                                     .map_err(|_| AttErrorCode::INVALID_ATTRIBUTE_VALUE_LENGTH)?;
-                                info!("GATT Write: tx_power = {}", value);
+                                info!("GATT Write: tx_power = {:?}", &tx_power_from_i8(value));
                                 flash_data.tx_power = value;
                             } else if handle == bonded_char.handle {
                                 let value = bool::from_gatt(data)

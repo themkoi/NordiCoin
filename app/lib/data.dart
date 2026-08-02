@@ -54,9 +54,9 @@ class OnAppDevice extends HiveObject {
     this.silentBuzzingTimeS = 40,
     this.txPower = 0,
     this.turningOffAlertTimeM = 15,
-    this.lowAlertLostDeviceTimeM = 5,
-    this.mediumAlertLostDeviceTimeM = 10,
-    this.highAlertLostDeviceTimeM = 15,
+    this.lowAlertLostDeviceTimeM = 10,
+    this.mediumAlertLostDeviceTimeM = 15,
+    this.highAlertLostDeviceTimeM = 20,
     this.lowAlertAction = ActionType.none,
     this.mediumAlertAction = ActionType.none,
     this.highAlertAction = ActionType.none,
@@ -133,12 +133,12 @@ class Settings extends HiveObject {
 
   Settings({
     this.alertsManualOverride = true,
-    this.alertsManualOverrideAlert = true,
+    this.alertsManualOverrideAlert = false,
     this.alertsOffAfterTimeH = 0,
     this.alertsOffAfterTimeM = 0,
     this.alertsOnAfterTimeH = 0,
     this.alertsOnAfterTimeM = 0,
-    this.scanFrequencyTimeM = 2,
+    this.scanFrequencyTimeM = 4,
     required this.defaultDeviceSettings,
   });
 }

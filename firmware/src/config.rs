@@ -6,7 +6,7 @@ pub const BLE_NAME_NOT_BONDED: &'static str = "NordiCoin-";
 pub const BLE_CONN_TIMEOUT_NOT_BONDED: Duration = Duration::from_secs(10);
 pub const BLE_CONN_TIMEOUT_BONDED: Duration = Duration::from_secs(4);
 pub const BLE_DEFAULT_TX_POWER: i8 = trouble_host::advertise::TxPower::ZerodBm as i8;
-pub const BLE_REFRESH_BATTERY: Duration = Duration::from_secs(60 * 60 * 12); // 2h
+pub const BLE_REFRESH_BATTERY: Duration = Duration::from_secs(60 * 60 * 24); // 24h
 pub const BLINK_ON_CONNECTION: bool = true; // Could be a feature to save a few bytes but nah
 // Configuring these impacts battery life a lot, but also how easy it is to connect to it
 // 5K is the limit, 3.9uA
