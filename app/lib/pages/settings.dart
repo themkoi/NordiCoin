@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
 import '../data.dart';
 import '../service/actions.dart';
 import '../utils/ble.dart';
+import '../utils/spinbox.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -104,34 +104,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Row(
         children: [
           Expanded(child: Text(label)),
-          SizedBox(
-            width: 80,
-            child: TextField(
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                suffixText: suffix,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 8,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-              onChanged: (v) {
-                final val = int.tryParse(v) ?? 0;
-                onChanged(val);
-              },
-              controller: TextEditingController(text: value.toString()),
-            ),
-          ),
+          SpinBox(value: value, suffix: suffix, onChanged: onChanged),
         ],
       ),
     );

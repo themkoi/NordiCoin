@@ -15,7 +15,8 @@ import 'service/background_scan.dart';
 import 'service/actions.dart';
 import 'utils/other.dart' show initHive;
 
-final GlobalKey<StatusDevicesPageState> statusKey = GlobalKey<StatusDevicesPageState>();
+final GlobalKey<StatusDevicesPageState> statusKey =
+    GlobalKey<StatusDevicesPageState>();
 
 Future<void> reloadHiveBoxes() async {
   if (Hive.isBoxOpen(hiveBoxDevices)) {

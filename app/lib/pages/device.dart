@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
@@ -9,6 +8,7 @@ import '../data.dart';
 import '../utils/battery.dart';
 import '../utils/ble.dart';
 import '../utils/other.dart';
+import '../utils/spinbox.dart';
 import 'status_devices.dart';
 
 class DevicePage extends StatefulWidget {
@@ -724,34 +724,7 @@ class _DevicePageState extends State<DevicePage> {
       child: Row(
         children: [
           Expanded(child: Text(label)),
-          SizedBox(
-            width: 80,
-            child: TextField(
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                suffixText: suffix,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 8,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-              onChanged: (v) {
-                final val = int.tryParse(v) ?? 0;
-                onChanged(val);
-              },
-              controller: TextEditingController(text: value.toString()),
-            ),
-          ),
+          SpinBox(value: value, suffix: suffix, onChanged: onChanged),
         ],
       ),
     );
