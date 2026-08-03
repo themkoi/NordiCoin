@@ -14,6 +14,7 @@ import '../utils/ble.dart';
 
 bool _isRunning = false;
 bool _notificationShown = false;
+bool _scanErrorNotificationShown = false;
 StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
 final FlutterLocalNotificationsPlugin _notificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -72,6 +73,37 @@ Future<void> _hideRunningNotification() async {
   _notificationShown = false;
 }
 
+Future<void> _showScanErrorNotification(String error) async {
+  if (_scanErrorNotificationShown) return;
+  await _notificationsPlugin.show(
+    2,
+    'BLE Scan Error',
+    error,
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'background_scan_id',
+        'Background Scan',
+        icon: '@drawable/notification_icon',
+        ongoing: true,
+        autoCancel: false,
+        importance: Importance.low,
+        priority: Priority.low,
+      ),
+    ),
+  );
+  _scanErrorNotificationShown = true;
+}
+
+Future<void> _hideScanErrorNotification() async {
+  if (!_scanErrorNotificationShown) return;
+  try {
+    await _notificationsPlugin.cancel(2);
+  } catch (e) {
+    // ignore
+  }
+  _scanErrorNotificationShown = false;
+}
+
 Future<void> initializeBackgroundScanService() async {
   final service = FlutterBackgroundService();
 
@@ -114,11 +146,8 @@ void onStart(ServiceInstance service) async {
     _scanResultsSubscription?.cancel();
     _scanResultsSubscription = null;
     FlutterBluePlus.stopScan();
-    try {
-      await _notificationsPlugin.cancel(1);
-    } catch (e) {
-      // IDK
-    }
+    await _hideRunningNotification();
+    await _hideScanErrorNotification();
     service.stopSelf();
   });
 
@@ -245,6 +274,7 @@ Future<void> _performScan(ServiceInstance service) async {
     } catch (_) {}
     await _scanResultsSubscription?.cancel();
     _scanResultsSubscription = null;
+    await _showScanErrorNotification('BLE scan failed: $e');
     return;
   }
 
@@ -252,6 +282,8 @@ Future<void> _performScan(ServiceInstance service) async {
   _scanResultsSubscription = null;
 
   if (!_isRunning) return;
+
+  await _hideScanErrorNotification();
 
   print('Service scan finished, found ${collectedResults.length} devices');
 
