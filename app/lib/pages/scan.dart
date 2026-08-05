@@ -70,9 +70,11 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Future onScanPressed() async {
+    final settingsBox = Hive.box(hiveBoxSettings);
+    final settings = settingsBox.get(0) as Settings;
     try {
       await FlutterBluePlus.startScan(
-        timeout: const Duration(seconds: 15),
+        timeout: Duration(seconds: settings.scanDurationS),
         androidUsesFineLocation: true,
         androidScanMode: AndroidScanMode.lowLatency,
         continuousUpdates: true,

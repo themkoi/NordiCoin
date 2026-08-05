@@ -77,6 +77,16 @@ int txPowerFromString(String str) {
     return result;
   }
 
+  final devicesBox = Hive.box(hiveBoxDevices);
+  final hasAlertsDevice = devicesBox.values.any(
+    (d) => d is Device && d.enabledAlerts,
+  );
+  if (!hasAlertsDevice) {
+    final result = (isOn: false, reason: 'No devices with alerts enabled');
+    print('areAlertsOn: $result');
+    return result;
+  }
+
   final now = DateTime.now();
   final currentMinutes = now.hour * 60 + now.minute;
 

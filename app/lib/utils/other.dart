@@ -37,12 +37,17 @@ Future<void> initHive() async {
 
   try {
     await Hive.openBox(hiveBoxDevices);
+  } catch (e) {
+    debugPrint('Devices box corrupted, clearing and starting fresh: $e');
+    await Hive.deleteBoxFromDisk(hiveBoxDevices);
+    await Hive.openBox(hiveBoxDevices);
+  }
+
+  try {
     await Hive.openBox(hiveBoxSettings);
   } catch (e) {
-    debugPrint('Hive init failed, clearing boxes and starting fresh: $e');
-    await Hive.deleteBoxFromDisk(hiveBoxDevices);
+    debugPrint('Settings box corrupted, clearing and starting fresh: $e');
     await Hive.deleteBoxFromDisk(hiveBoxSettings);
-    await Hive.openBox(hiveBoxDevices);
     await Hive.openBox(hiveBoxSettings);
   }
 }

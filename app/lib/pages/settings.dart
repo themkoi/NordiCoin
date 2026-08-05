@@ -398,6 +398,17 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               suffix: 'min',
             ),
+            _buildIntField(
+              label: 'Scan Duration',
+              value: _settings.scanDurationS,
+              onChanged: (v) {
+                setState(() {
+                  _settings.scanDurationS = v;
+                  _autoSave();
+                });
+              },
+              suffix: 's',
+            ),
           ]),
           _buildSection('Default Device Settings', [
             _buildIntField(

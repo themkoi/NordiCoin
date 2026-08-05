@@ -15,6 +15,7 @@ import '../utils/ble.dart';
 bool _isRunning = false;
 bool _notificationShown = false;
 bool _scanErrorNotificationShown = false;
+late Settings _cachedSettings;
 StreamSubscription<List<ScanResult>>? _scanResultsSubscription;
 final FlutterLocalNotificationsPlugin _notificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -131,6 +132,10 @@ void onStart(ServiceInstance service) async {
   await initHive();
   await initActions();
 
+  // Once at startup only, idk if hive box loading is heavy
+  final settingsBox = Hive.box(hiveBoxSettings);
+  _cachedSettings = settingsBox.get(0) as Settings;
+
   // Maybe needed too?
   await _notificationsPlugin.initialize(
     const InitializationSettings(
@@ -163,9 +168,7 @@ Future<void> _startScanLoop(ServiceInstance service) async {
   }
 
   while (_isRunning) {
-    final settingsBox = Hive.box(hiveBoxSettings);
-    final settings = settingsBox.get(0) as Settings;
-    int scanIntervalM = settings.scanFrequencyTimeM * 60;
+    int scanIntervalM = _cachedSettings.scanFrequencyTimeM * 60;
 
     final waitStart = DateTime.now();
     while (_isRunning &&
@@ -258,7 +261,7 @@ Future<void> _performScan(ServiceInstance service) async {
     await FlutterBluePlus.startScan(
       // Android power saving needs this, otherwise no devices found
       withRemoteIds: devices.map((d) => d.macAddress).toList(),
-      timeout: const Duration(seconds: 15),
+      timeout: Duration(seconds: _cachedSettings.scanDurationS),
       androidUsesFineLocation: true,
       androidScanMode: AndroidScanMode.lowLatency,
       continuousUpdates: true,

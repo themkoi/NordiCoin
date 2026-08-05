@@ -129,6 +129,9 @@ class Settings extends HiveObject {
   late int scanFrequencyTimeM;
 
   @HiveField(7)
+  late int scanDurationS;
+
+  @HiveField(8)
   late OnAppDevice defaultDeviceSettings;
 
   Settings({
@@ -139,6 +142,7 @@ class Settings extends HiveObject {
     this.alertsOnAfterTimeH = 0,
     this.alertsOnAfterTimeM = 0,
     this.scanFrequencyTimeM = 4,
+    this.scanDurationS = 20,
     required this.defaultDeviceSettings,
   });
 }

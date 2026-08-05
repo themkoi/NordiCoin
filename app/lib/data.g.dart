@@ -143,14 +143,15 @@ class SettingsAdapter extends TypeAdapter<Settings> {
       alertsOnAfterTimeH: fields[4] as int,
       alertsOnAfterTimeM: fields[5] as int,
       scanFrequencyTimeM: fields[6] as int,
-      defaultDeviceSettings: fields[7] as OnAppDevice,
+      scanDurationS: fields[7] as int,
+      defaultDeviceSettings: fields[8] as OnAppDevice,
     );
   }
 
   @override
   void write(BinaryWriter writer, Settings obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.alertsManualOverride)
       ..writeByte(1)
@@ -166,6 +167,8 @@ class SettingsAdapter extends TypeAdapter<Settings> {
       ..writeByte(6)
       ..write(obj.scanFrequencyTimeM)
       ..writeByte(7)
+      ..write(obj.scanDurationS)
+      ..writeByte(8)
       ..write(obj.defaultDeviceSettings);
   }
 
