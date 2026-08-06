@@ -20,11 +20,11 @@ pub const LED_BLINK_FOR_ON_MS: Duration = Duration::from_millis(50);
 pub const LED_BLINK_FOR_OFF_MS: Duration = Duration::from_millis(500);
 
 // PWM
-pub const PWM_BASE_FREQ: u32 = 4950;
+pub const PWM_BASE_FREQ: u32 = 6000;
 pub const PWM_FREQ_TOLERANCE: u16 = 400;
 pub const PWM_FREQ_STEP: u16 = 200;
 pub const PWM_BASE_DUTY: u8 = 50;
-pub const PWM_BASE_DELAY_MS: Duration = Duration::from_millis(100);
+pub const PWM_BASE_DELAY_MS: Duration = Duration::from_millis(90);
 
 // Button
 pub const BUTTON_HOLD_TIME: Duration = Duration::from_secs(5);
