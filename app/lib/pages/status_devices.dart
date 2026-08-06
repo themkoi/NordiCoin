@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../consts.dart';
 import '../data.dart';
+import '../main.dart';
 import '../utils/battery.dart';
 import '../utils/other.dart';
 import '../utils/scan.dart';
@@ -311,34 +313,147 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        final errors = await startScan();
-        await loadDevices();
+        final errors = <String>[];
+        final foundMacAddresses = <String>{};
+        final collectedResults = <ScanResult>[];
 
-        if (!mounted) return;
+        final subscription = FlutterBluePlus.onScanResults.listen((
+          results,
+        ) async {
+          for (final newResult in results) {
+            final existingIndex = collectedResults.indexWhere(
+              (r) => r.device.remoteId == newResult.device.remoteId,
+            );
+            if (existingIndex >= 0) {
+              if (newResult.rssi > collectedResults[existingIndex].rssi) {
+                collectedResults[existingIndex] = newResult;
+              }
+            } else {
+              collectedResults.add(newResult);
+            }
 
-        void showResultDialogs() {
-          if (errors.isNotEmpty) {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Refresh finished'),
-                content: Text(errors),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Refreshed successfully')),
-            );
+            final scannedMac = newResult.device.remoteId.str.toLowerCase();
+            if (!foundMacAddresses.contains(scannedMac)) {
+              for (final device in _devices) {
+                if (device.macAddress.toLowerCase() == scannedMac) {
+                  foundMacAddresses.add(scannedMac);
+                  print(
+                    '${device.aliasName}: found (RSSI: ${newResult.rssi} dBm)',
+                  );
+
+                  // Update immediately and save to hivebox
+                  device.lastSeenTime = DateTime.now();
+                  device.lastSeenRssi = newResult.rssi;
+
+                  final deviceName = newResult.advertisementData.advName;
+                  if (deviceName.isNotEmpty) {
+                    errors.add('Device ($deviceName) unbonded itself');
+                  } else {
+                    final batteryVoltage = parseBatteryFromRawAdvBytes(
+                      newResult.advertisementData.rawAdvBytes,
+                    );
+                    print(
+                      '${device.aliasName}: found (RSSI: ${newResult.rssi} dBm)',
+                    );
+                    if (batteryVoltage != null) {
+                      device.batteryVoltage = batteryVoltage;
+                      print('Battery: ${batteryVoltage.toStringAsFixed(2)}V');
+                    } else {
+                      errors.add(
+                        'Failed to retrieve battery level for ${device.aliasName}',
+                      );
+                    }
+                  }
+
+                  await device.save();
+
+                  // Update UI
+                  if (mounted) {
+                    setState(() {
+                      final index = _devices.indexOf(device);
+                      if (index >= 0) {
+                        _devices[index] = device;
+                      }
+                    });
+                  }
+                  break;
+                }
+              }
+            }
+
+            if (foundMacAddresses.length == _devices.length &&
+                _devices.isNotEmpty) {
+              print(
+                'All ${_devices.length} bonded device(s) found, stopping scan early.',
+              );
+              FlutterBluePlus.stopScan();
+            }
+          }
+        });
+
+        final settingsBox = Hive.box(hiveBoxSettings);
+        final settings = settingsBox.get(0) as Settings;
+
+        try {
+          await FlutterBluePlus.startScan(
+            timeout: Duration(seconds: settings.scanDurationS),
+            androidUsesFineLocation: true,
+            androidScanMode: AndroidScanMode.lowLatency,
+            continuousUpdates: true,
+            continuousDivisor: 1,
+          );
+        } catch (e) {
+          print('Error starting scan: $e');
+          await subscription.cancel();
+          rethrow;
+        }
+
+        await FlutterBluePlus.isScanning.firstWhere(
+          (isScanning) => !isScanning,
+        );
+        await subscription.cancel();
+        print('Scan finished.');
+
+        // so UI shows 0s ago when the scan ends
+        for (final device in _devices) {
+          if (foundMacAddresses.contains(device.macAddress.toLowerCase())) {
+            device.lastSeenTime = DateTime.now();
+            await device.save();
           }
         }
 
-        Future.microtask(showResultDialogs);
+        if (mounted) {
+          setState(() {});
+        }
+
+        for (final device in _devices) {
+          if (!foundMacAddresses.contains(device.macAddress.toLowerCase()) &&
+              device.enabledAlerts) {
+            errors.add('Device ${device.aliasName} wasn\'t found');
+          }
+        }
+
+        if (!mounted) return;
+
+        if (errors.isNotEmpty) {
+          showDialog(
+            context: statusKey.currentContext!,
+            builder: (context) => AlertDialog(
+              title: const Text('Refresh finished'),
+              content: Text(errors.join('\n')),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          scaffoldMessengerKey.currentState?.showSnackBar(
+            const SnackBar(content: Text('Refreshed successfully')),
+          );
+        }
       },
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 2),

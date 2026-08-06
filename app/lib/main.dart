@@ -17,6 +17,8 @@ import 'utils/other.dart' show initHive;
 
 final GlobalKey<StatusDevicesPageState> statusKey =
     GlobalKey<StatusDevicesPageState>();
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 
 Future<void> reloadHiveBoxes() async {
   if (Hive.isBoxOpen(hiveBoxDevices)) {
@@ -107,6 +109,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'NordiCoin',
       themeMode: ThemeMode.dark,
       darkTheme: ThemeData(
