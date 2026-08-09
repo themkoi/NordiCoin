@@ -28,8 +28,9 @@
         },
         {
             "label": "run release no debug",
-            "command": "cargo run --profile release_no_debug --no-default-features",
-            "type": "shell"
+            "command": "probe-rs run --chip nRF52805_xxAA --verify target/thumbv7em-none-eabi/release_no_debug/nordicoin",
+            "type": "shell",
+            "dependsOn": "build release no-debug"
         },
         {
             "label": "binary info",
@@ -44,6 +45,26 @@
         {
             "label": "binary info no-debug",
             "command": "./scripts/binary_info.sh release_no_debug",
+            "type": "shell",
+            "dependsOn": "build release no-debug",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "run release slow",
+            "command": "probe-rs run --chip nRF52805_xxAA --speed 200 --verify target/thumbv7em-none-eabi/release/nordicoin",
+            "type": "shell",
+            "dependsOn": "build release",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "run release slow no debug",
+            "command": "probe-rs run --chip nRF52805_xxAA --speed 200 --verify target/thumbv7em-none-eabi/release_no_debug/nordicoin",
             "type": "shell",
             "dependsOn": "build release no-debug",
             "group": {
