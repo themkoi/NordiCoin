@@ -17,6 +17,4 @@ Open source BLE tracker with up to 6 years of battery life on a single coin cell
 Open Community License v1.1 + General Attribution v1
 
 ### Contact
-Github issues,
-
-[![Chat on Discord](https://img.shields.io/badge/Chat%20on-Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/6PUmRXZRGD)
+Github issues, [Yatchy discord server](https://github.com/Szybet/Yatchy), [Quill OS matrix space](https://quill-os.org)
