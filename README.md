@@ -20,9 +20,19 @@ Open source BLE tracker with up to 6 years of battery life on a single coin cell
 - Wanna use it as a remote for home automation? Sure, that's possible
 - Built using the nrf52805
 - Firmware written in rust
+- Further potential to improve battery life
 
 ### Licence
 Open Community License v1.1 + General Attribution v1
 
 ### Contact
 Github issues, [Yatchy discord server](https://github.com/Szybet/Yatchy), [Quill OS matrix space](https://quill-os.org)
+
+### Power consumption
+It's a spectrum, the absolute best I got was 3.7uA
+
+<img height="500" alt="image" src="https://github.com/user-attachments/assets/39d11ed7-1051-45b8-bef5-feb2df012a93" />
+
+But this, at least with the current method is hard to connect to because it's 5s of advertisement delay, not 4s. With 4, it's around 4.5uA. Explore the `battery_life.ods` file to confirm
+
+If someone really wanted to, it would be possible to sync time, advertise only on full minute, make the app do the same and this way it would advertise 15 times less. 10 years of battery life easily achievable. But connecting to it, at least with regular android phones would take long/impossible. That's why I decided the current setup is good enough
