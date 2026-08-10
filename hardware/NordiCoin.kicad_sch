@@ -3293,7 +3293,7 @@
 	)
 	(rectangle
 		(start 223.52 53.34)
-		(end 260.35 104.14)
+		(end 260.35 93.98)
 		(stroke
 			(width 0)
 			(type default)
@@ -3328,12 +3328,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "1696cd37-792e-4531-bbd7-952db26e6a6e")
-	)
-	(junction
-		(at 236.22 90.17)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "25cefd31-c517-4c45-b3b0-4c202bacae4b")
 	)
 	(junction
 		(at 124.46 151.13)
@@ -4600,84 +4594,6 @@
 			(project "NordiCoin"
 				(path "/8a610a6d-523d-4816-a243-66871bfe0c2e"
 					(reference "#PWR011")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 236.22 97.79 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "0a1655db-cd10-4cb2-94c0-2d322b1f62b8")
-		(property "Reference" "#PWR026"
-			(at 236.22 104.14 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 236.22 102.87 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 236.22 97.79 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 236.22 97.79 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 236.22 97.79 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "be0c64c0-2c67-4fcd-8f7c-7bade40af67a")
-		)
-		(instances
-			(project "NordiCoin"
-				(path "/8a610a6d-523d-4816-a243-66871bfe0c2e"
-					(reference "#PWR026")
 					(unit 1)
 				)
 			)
@@ -6262,10 +6178,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "82f6bef1-e704-4356-8671-b3884e561e80")
 		(property "Reference" "R1"
-			(at 246.38 57.15 90)
+			(at 246.38 58.166 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6274,8 +6189,8 @@
 				)
 			)
 		)
-		(property "Value" "1K"
-			(at 246.38 59.69 90)
+		(property "Value" "330R"
+			(at 246.38 60.706 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6694,88 +6609,6 @@
 			(project "NordiCoin"
 				(path "/8a610a6d-523d-4816-a243-66871bfe0c2e"
 					(reference "JP3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 236.22 93.98 180)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "8adb5c8f-2810-46fb-8500-0c30794029ab")
-		(property "Reference" "R4"
-			(at 238.76 92.7099 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "1K"
-			(at 238.76 95.2499 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 237.998 93.98 90)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 236.22 93.98 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 236.22 93.98 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "e2766872-f1ff-4206-a263-d804d92e0138")
-		)
-		(pin "2"
-			(uuid "6f372260-7cef-45dc-ba90-d6b51d4f0830")
-		)
-		(instances
-			(project "NordiCoin"
-				(path "/8a610a6d-523d-4816-a243-66871bfe0c2e"
-					(reference "R4")
 					(unit 1)
 				)
 			)
@@ -7746,10 +7579,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "cefaa7a0-84de-4f38-ab16-8e79e213adae")
 		(property "Reference" "R3"
-			(at 238.76 67.31 90)
+			(at 238.76 68.326 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7758,8 +7590,8 @@
 				)
 			)
 		)
-		(property "Value" "1K"
-			(at 238.76 69.85 90)
+		(property "Value" "330R"
+			(at 238.76 70.866 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
