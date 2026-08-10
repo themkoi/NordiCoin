@@ -16,6 +16,7 @@ Open source BLE tracker with up to 6 years of battery life on a single coin cell
 
 - It does not rely on a corporation BLE network to find it. Just you and your devices who track it. Dedicated android app and [watchy](https://github.com/Szybet/InkWatchy) support. The app alerts you once you are out of range
 - Design focuses on easy self assembly by individuals
+  - Place for a second MCU in a different package, if the main one is not available. It also exposes all the pins for more features
 - Buzzer, to find it easier and a button to stop buzzing
 - Wanna use it as a remote for home automation? Sure, that's possible
 - Built using the nrf52805
