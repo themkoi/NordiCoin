@@ -73,7 +73,7 @@ debug = [
 [profile.release_no_debug]
 inherits = "release"
 opt-level = "z"
-debug = 0
+debug = 0 # Doesn't matter
 lto = true
 codegen-units = 1
 strip = true
@@ -82,12 +82,9 @@ rpath = false
 
 [profile.release]
 opt-level = "z"
-debug = 2
+debug = 2 # Doesn't matter
 lto = true
 codegen-units = 1 
-
-[profile.dev]
-debug = 2
 
 [patch.crates-io]
 nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
