@@ -30,14 +30,18 @@ Future<void> initActions() async {
   );
 }
 
-Future<void> executeAction(ActionType action, String message) async {
+Future<void> executeAction(
+  ActionType action,
+  String message, {
+  required int notificationId,
+}) async {
   switch (action) {
     case ActionType.none:
       print("Action is none");
       break;
     case ActionType.notification:
       print("Action is notification");
-      await _executeNotification(message);
+      await _executeNotification(message, notificationId: notificationId);
       break;
     case ActionType.buzzing:
       print("Action is buzzing");
@@ -50,9 +54,12 @@ Future<void> executeAction(ActionType action, String message) async {
   }
 }
 
-Future<void> _executeNotification(String message) async {
+Future<void> _executeNotification(
+  String message, {
+  required int notificationId,
+}) async {
   await _notificationsPlugin.show(
-    999,
+    notificationId,
     'NordCoin',
     message,
     const NotificationDetails(

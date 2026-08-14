@@ -393,6 +393,7 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
 
         final settingsBox = Hive.box(hiveBoxSettings);
         final settings = settingsBox.get(0) as Settings;
+        final errorColor = Theme.of(context).colorScheme.error;
 
         try {
           await FlutterBluePlus.startScan(
@@ -402,16 +403,21 @@ class StatusDevicesPageState extends State<StatusDevicesPage> {
             continuousUpdates: true,
             continuousDivisor: 1,
           );
+          await FlutterBluePlus.isScanning.firstWhere(
+            (isScanning) => !isScanning,
+          );
         } catch (e) {
-          print('Error starting scan: $e');
+          if (!mounted) return;
+          scaffoldMessengerKey.currentState?.showSnackBar(
+            SnackBar(
+              content: Text('Scan failed: $e'),
+              backgroundColor: errorColor,
+            ),
+          );
+          return;
+        } finally {
           await subscription.cancel();
-          rethrow;
         }
-
-        await FlutterBluePlus.isScanning.firstWhere(
-          (isScanning) => !isScanning,
-        );
-        await subscription.cancel();
         print('Scan finished.');
 
         // so UI shows 0s ago when the scan ends

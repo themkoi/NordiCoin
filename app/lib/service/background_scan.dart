@@ -35,6 +35,8 @@ class TriggeredAlert {
 
 // There is no need to clear this, we simply will have more delay?
 final List<TriggeredAlert> _triggeredAlerts = [];
+// Mac, notification id
+final Map<String, int> _notificationDeviceIds = {};
 
 const AndroidNotificationChannel _channel = AndroidNotificationChannel(
   'background_scan_id',
@@ -46,7 +48,7 @@ const AndroidNotificationChannel _channel = AndroidNotificationChannel(
 Future<void> _showRunningNotification() async {
   if (_notificationShown) return;
   await _notificationsPlugin.show(
-    1,
+    notifIdBackgroundScanRunning,
     '',
     '',
     const NotificationDetails(
@@ -67,7 +69,7 @@ Future<void> _showRunningNotification() async {
 Future<void> _hideRunningNotification() async {
   if (!_notificationShown) return;
   try {
-    await _notificationsPlugin.cancel(1);
+    await _notificationsPlugin.cancel(notifIdBackgroundScanRunning);
   } catch (e) {
     // I DONT KNOW
   }
@@ -77,7 +79,7 @@ Future<void> _hideRunningNotification() async {
 Future<void> _showScanErrorNotification(String error) async {
   if (_scanErrorNotificationShown) return;
   await _notificationsPlugin.show(
-    2,
+    notifIdBackgroundScanError,
     'BLE Scan Error',
     error,
     const NotificationDetails(
@@ -98,7 +100,7 @@ Future<void> _showScanErrorNotification(String error) async {
 Future<void> _hideScanErrorNotification() async {
   if (!_scanErrorNotificationShown) return;
   try {
-    await _notificationsPlugin.cancel(2);
+    await _notificationsPlugin.cancel(notifIdBackgroundScanError);
   } catch (e) {
     // ignore
   }
@@ -220,6 +222,7 @@ Future<void> _performScan(ServiceInstance service) async {
 
   final foundMacAddresses = <String>{};
   final collectedResults = <ScanResult>[];
+  final devicesWithAlerts = devices.where((d) => d.enabledAlerts).toList();
 
   _scanResultsSubscription = FlutterBluePlus.onScanResults.listen((results) {
     for (final newResult in results) {
@@ -245,10 +248,13 @@ Future<void> _performScan(ServiceInstance service) async {
         }
       }
 
-      // Early stop: all bonded devices found
-      if (foundMacAddresses.length == devices.length && devices.isNotEmpty) {
+      // Early stop: all devices with alerts enabled are found
+      // No need to check if list is empty, we check this before running scan
+      if (devicesWithAlerts.every(
+        (d) => foundMacAddresses.contains(d.macAddress.toLowerCase()),
+      )) {
         print(
-          'All ${devices.length} bonded device(s) found, stopping scan early.',
+          'All ${devicesWithAlerts.length} device(s) with alerts enabled found, stopping scan early.',
         );
         try {
           FlutterBluePlus.stopScan();
@@ -298,6 +304,15 @@ Future<void> _performScan(ServiceInstance service) async {
 
     for (final device in devices) {
       if (device.macAddress.toLowerCase() == scannedMac) {
+        // If this device had a notification alert triggered, cancel it
+        // Maybe in the config in the future
+        final notifId = _notificationDeviceIds.remove(
+          device.macAddress.toLowerCase(),
+        );
+        if (notifId != null) {
+          await _notificationsPlugin.cancel(notifId);
+        }
+
         device.lastSeenTime = DateTime.now();
         device.lastSeenRssi = result.rssi;
 
@@ -349,7 +364,15 @@ Future<void> _checkDeviceAlerts() async {
           '(last seen ${lastSeenDiffM}m ago, threshold: ${settings.highAlertLostDeviceTimeM}m)',
         );
         final highMessage = _buildAlertMessage(device.aliasName, lastSeenDiffM);
-        await executeAction(highAction, highMessage);
+        final highNotifId = _getNotificationId(device.macAddress);
+        await executeAction(
+          highAction,
+          highMessage,
+          notificationId: highNotifId,
+        );
+        if (highAction == ActionType.notification) {
+          _notificationDeviceIds[device.macAddress.toLowerCase()] = highNotifId;
+        }
         _addTriggeredAlert(device.id, highAction, now);
         // Skip rest alerts
         continue;
@@ -369,7 +392,16 @@ Future<void> _checkDeviceAlerts() async {
           device.aliasName,
           lastSeenDiffM,
         );
-        await executeAction(mediumAction, mediumMessage);
+        final mediumNotifId = _getNotificationId(device.macAddress);
+        await executeAction(
+          mediumAction,
+          mediumMessage,
+          notificationId: mediumNotifId,
+        );
+        if (mediumAction == ActionType.notification) {
+          _notificationDeviceIds[device.macAddress.toLowerCase()] =
+              mediumNotifId;
+        }
         _addTriggeredAlert(device.id, mediumAction, now);
         // Skip low
         continue;
@@ -386,7 +418,11 @@ Future<void> _checkDeviceAlerts() async {
           '(last seen ${lastSeenDiffM}m ago, threshold: ${settings.lowAlertLostDeviceTimeM}m)',
         );
         final lowMessage = _buildAlertMessage(device.aliasName, lastSeenDiffM);
-        await executeAction(lowAction, lowMessage);
+        final lowNotifId = _getNotificationId(device.macAddress);
+        await executeAction(lowAction, lowMessage, notificationId: lowNotifId);
+        if (lowAction == ActionType.notification) {
+          _notificationDeviceIds[device.macAddress.toLowerCase()] = lowNotifId;
+        }
         _addTriggeredAlert(device.id, lowAction, now);
       }
     }
@@ -437,4 +473,9 @@ void _addTriggeredAlert(String deviceId, ActionType alertAction, DateTime now) {
 
 String _buildAlertMessage(String deviceName, int minutesNotSeen) {
   return '$deviceName not seen for $minutesNotSeen minutes';
+}
+
+// Skip 0-999
+int _getNotificationId(String macAddress) {
+  return macAddress.hashCode.abs() % 10000 + 1000;
 }

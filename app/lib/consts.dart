@@ -3,6 +3,11 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 const String hiveBoxDevices = 'devices';
 const String hiveBoxSettings = 'settings';
 
+// Valid range for hardcoded notification IDs: 0-999
+const int notifIdBackgroundScanRunning = 1;
+const int notifIdBackgroundScanError = 2;
+const int notifIdTest = 999;
+
 /// NordCoin Service UUID (16-bit: 0x0001)
 final Guid nordCoinServiceUuid = Guid("00000001-0000-1000-8000-00805f9b34fb");
 
