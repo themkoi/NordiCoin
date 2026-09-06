@@ -1,0 +1,76 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "check",
+            "command": "clear; cargo check",
+            "type": "shell"
+        },
+        {
+            "label": "run release",
+            "command": "cargo run --release",
+            "type": "shell"
+        },
+        {
+            "label": "build release",
+            "command": "cargo build --release",
+            "type": "shell"
+        },
+        {
+            "label": "build release no-debug",
+            "command": "cargo build --profile release_no_debug --no-default-features",
+            "type": "shell"
+        },
+        {
+            "label": "erase chip",
+            "command": "probe-rs erase --chip nRF52805_xxAA",
+            "type": "shell"
+        },
+        {
+            "label": "run release no debug",
+            "command": "probe-rs run --chip nRF52805_xxAA --verify target/thumbv7em-none-eabi/release_no_debug/nordicoin",
+            "type": "shell",
+            "dependsOn": "build release no-debug"
+        },
+        {
+            "label": "binary info",
+            "command": "./scripts/binary_info.sh release",
+            "type": "shell",
+            "dependsOn": "build release",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "binary info no-debug",
+            "command": "./scripts/binary_info.sh release_no_debug",
+            "type": "shell",
+            "dependsOn": "build release no-debug",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "run release slow",
+            "command": "probe-rs run --chip nRF52805_xxAA --speed 200 --verify target/thumbv7em-none-eabi/release/nordicoin",
+            "type": "shell",
+            "dependsOn": "build release",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "run release slow no debug",
+            "command": "probe-rs run --chip nRF52805_xxAA --speed 200 --verify target/thumbv7em-none-eabi/release_no_debug/nordicoin",
+            "type": "shell",
+            "dependsOn": "build release no-debug",
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        }
+    ]
+}

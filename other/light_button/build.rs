@@ -1,0 +1,25 @@
+use std::env;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
+
+fn linker_data() -> &'static [u8] {
+    include_bytes!("memory.x")
+}
+
+fn main() {
+    let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    File::create(out.join("memory.x"))
+        .unwrap()
+        .write_all(linker_data())
+        .unwrap();
+    println!("cargo::rustc-link-search={}", out.display());
+
+    println!("cargo::rerun-if-changed=memory.x");
+
+    println!("cargo::rustc-link-arg-bins=--nmagic");
+    println!("cargo::rustc-link-arg-bins=-Tlink.x");
+    if std::env::var("CARGO_FEATURE_DEBUG").is_ok() {
+        println!("cargo::rustc-link-arg-bins=-Tdefmt.x");
+    }
+}

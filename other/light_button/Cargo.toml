@@ -1,0 +1,91 @@
+[package]
+name = "nordicoin"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# MCU specific
+embassy-nrf = { version = "0.11", default-features = false, features = [
+    "time-driver-rtc1",
+    "gpiote",
+    "unstable-pac",
+    "rt",
+    "nrf52805",
+] }
+embassy-executor = { version = "0.10", default-features = false, features = [
+    "platform-cortex-m",
+    "executor-thread",
+    "executor-interrupt",
+] }
+embassy-time = { version = "0.5", default-features = false }
+embassy-futures = "0.1"
+embassy-sync = { version = "0.8" }
+embedded-storage = "0.3"
+
+# Serialization
+serde = { version = "1", default-features = false, features = ["derive"] }
+postcard = { version = "1", default-features = false, features = [
+  "use-defmt",
+  "use-crc",
+  "experimental-derive",
+] }
+crc = "3"
+
+# Debug (optional)
+defmt = { version = "1.0", optional = true }
+defmt-rtt = { version = "1.0", optional = true }
+panic-probe = { version = "1.0", optional = true }
+
+cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.0"
+static_cell = "2"
+
+# BLE
+nrf-sdc = { version = "0.4", default-features = false, features = [
+    "peripheral", "central", "nrf52805",
+] }
+nrf-mpsl = { version = "0.3", default-features = false, features = [
+    "nrf52805",
+] }
+bt-hci = { version = "0.9", default-features = false }
+trouble-host = { version = "0.7.0", features = [
+    "derive", "scan", "central", "peripheral", "gatt",
+] }
+
+[features]
+default = ["debug"]
+debug = [
+    "dep:defmt",
+    "dep:defmt-rtt",
+    "dep:panic-probe",
+    "panic-probe/print-defmt",
+    "embassy-nrf/defmt",
+    "embassy-executor/defmt",
+    "embassy-time/defmt",
+    "embassy-time/defmt-timestamp-uptime",
+    "embassy-sync/defmt",
+    "nrf-sdc/defmt",
+    "nrf-mpsl/defmt",
+    "bt-hci/defmt",
+    "trouble-host/defmt",
+]
+
+[profile.release_no_debug]
+inherits = "release"
+opt-level = "z"
+debug = 0 # Doesn't matter
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+rpath = false
+
+[profile.release]
+opt-level = "z"
+debug = 2 # Doesn't matter
+lto = true
+codegen-units = 1 
+
+[patch.crates-io]
+nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }
+nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "abe49d22ebfc85fae134eb082fbfddf752016a55" }

@@ -1,0 +1,22 @@
+{
+    "rust-analyzer.cargo.allTargets": false,
+    "rust-analyzer.cargo.target": "thumbv7em-none-eabihf",
+    "rust-analyzer.linkedProjects": [
+        "Cargo.toml"
+        /*"tests/adc/Cargo.toml",
+        "tests/advertisement_test/Cargo.toml",
+        "tests/connection_test_central/Cargo.toml",
+        "tests/connection_test_peripheral/Cargo.toml",
+        "tests/passive_scan_test/Cargo.toml",
+        "tests/pwm/Cargo.toml",
+        "tests/led/Cargo.toml",
+        "tests/temp/Cargo.toml",
+        "tests/button/Cargo.toml",
+        "tests/flash/Cargo.toml",
+        "tests/mac/Cargo.toml",
+        "tests/rand/Cargo.toml",
+        "tests/time/Cargo.toml"*/
+    ],
+    "rust-analyzer.cachePriming.enable": false,
+    "rust-analyzer.lru.capacity": 44,
+}

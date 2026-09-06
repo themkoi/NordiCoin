@@ -1,0 +1,14 @@
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
+runner = "probe-rs run --chip nRF52805_xxAA"
+
+[build]
+target = "thumbv7em-none-eabi"
+
+[env]
+DEFMT_LOG = "info"
+TROUBLE_HOST_CLIENT_ATT_TABLE_SIZE = "4"
+
+# If someone wants + nightly
+#[unstable]
+#build-std = ["core"]
+#build-std-features = ["optimize_for_size"]

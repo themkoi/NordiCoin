@@ -20,7 +20,7 @@ use static_cell::StaticCell;
 use trouble_host::prelude::*;
 use {defmt_rtt as _, panic_probe as _};
 
-const TARGET_ADDRESS: [u8; 6] = [206, 23, 126, 69, 54, 87];
+pub const TARGET_ADDRESS: [u8; 6] = [0x67, 0x63, 0xAA, 0x8F, 0x2A, 0x72];
 
 const BATTERY_SERVICE_UUID: Uuid = Uuid::new_short(0x180f);
 const BATTERY_LEVEL_UUID: Uuid = Uuid::new_short(0x2a19);
